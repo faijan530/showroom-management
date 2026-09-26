@@ -1,43 +1,40 @@
-﻿# Showroom Management + Bike Service Management SaaS
+# Showroom Application — Multi-Showroom Vehicle & Service Marketplace
 
-A production-grade, multi-tenant SaaS platform for automobile showrooms and bike service centers.
+A multi-showroom marketplace and operational management platform for **Bikes and Cars**, spare parts cataloging, customer enquiries, and workshop service assignments.
 
-## Folder Structure
+---
 
-showroom-management/
-├── PRD+DLD/
-│   ├── PRD_Showroom_Bike_Service_SaaS.md     <- Full PRD (v1.0)
-│   └── showroom_management_prd_v0.md         <- Initial PRD Draft
-└── README.md
+## 📚 Documentation Index
 
-## Documents
+| Document | Path | Description | Status |
+|----------|------|-------------|--------|
+| **PRD (v2.0)** | [PRD_Showroom_Bike_Service_SaaS.md](file:///c:/Users/faizadev/Desktop/showroom-management/PRD+DLD/PRD_Showroom_Bike_Service_SaaS.md) | Single Source of Truth Product Requirements Document | ✅ Active |
+| **HLD (v2.0)** | [HLD_Showroom_Bike_Service_SaaS.md](file:///c:/Users/faizadev/Desktop/showroom-management/PRD+DLD/HLD_Showroom_Bike_Service_SaaS.md) | High-Level Architecture, Schemas, & API Map | ✅ Active |
+| **Backend DLD** | [PRD+DLD/DLD/backend/](file:///c:/Users/faizadev/Desktop/showroom-management/PRD+DLD/DLD/backend/) | Detailed Low-Level Design for Backend Modules | ✅ Active |
+| **Frontend DLD** | [PRD+DLD/DLD/frontend/](file:///c:/Users/faizadev/Desktop/showroom-management/PRD+DLD/DLD/frontend/) | Detailed Low-Level Design for Web Panels | ✅ Active |
+| **Mobile DLD** | [PRD+DLD/DLD/mobile/](file:///c:/Users/faizadev/Desktop/showroom-management/PRD+DLD/DLD/mobile/) | Detailed Low-Level Design for Mobile Views | ✅ Active |
 
-| Document                          | Description                          | Status     |
-|-----------------------------------|--------------------------------------|------------|
-| PRD_Showroom_Bike_Service_SaaS.md | Full Product Requirements Document   | Draft      |
-| HLD (High-Level Design)           | System architecture & component diagrams | Pending |
-| DLD (Detailed-Level Design)       | Per-module detailed design           | Pending    |
+---
 
-## System Panels
+## 👥 5 System Roles & Panels
 
-| Panel               | Users                                    |
-|---------------------|------------------------------------------|
-| Customer Web App    | End customers (bike owners)              |
-| Showroom Admin Panel| Owner, Admin, Manager, Accountant        |
-| Worker Panel        | Mechanics, Technicians                   |
-| Super Admin Panel   | Platform operators                       |
-| Mobile App (Expo)   | All users                                |
+1. **Superadmin**: Creates Showrooms, provisions Showroom Admin credentials, and maintains overall marketplace operation.
+2. **Admin**: Manages own showroom collection (bikes, cars, spare parts), provisions Worker & Inventory Manager credentials, receives user enquiries/requests, and assigns service jobs.
+3. **Worker**: Logged-in technician who views assigned service tasks, approves/rejects jobs, and updates job statuses with timestamps.
+4. **Inventory Manager**: Manages vehicle specs and spare parts catalog (CRUD), handles part availability queries, and manages stock quantities.
+5. **User / Customer**: Marketplace user who browses/filters vehicles (by Showroom, Brand, Price, Color, CC) and spare parts, discovers Top Vehicles, sends enquiries (single or all showrooms), and requests servicing.
 
-## Tech Stack
+---
 
-| Layer      | Technology                                |
-|------------|-------------------------------------------|
-| Frontend   | Next.js 15, React 19, TypeScript          |
-| Backend    | Next.js 15 (Route Handlers), TypeScript   |
-| Database   | PostgreSQL + Prisma ORM                   |
-| Mobile     | Expo + React Native + TypeScript          |
-| Monorepo   | Turborepo + npm workspaces                |
-| Validation | Zod                                       |
-| Testing    | Vitest + Playwright                       |
+## 🛠️ Tech Stack
 
-Project Started: September 25, 2026
+- **Framework**: Next.js 15 (React 19, TypeScript)
+- **Database & ORM**: PostgreSQL + Prisma ORM
+- **Authentication**: JWT + RBAC
+- **Validation**: Zod
+- **Mobile**: Expo / React Native (Responsive Web + Mobile)
+
+---
+
+## 🔒 Strict Admin Data Isolation
+Each Showroom Admin, Worker, and Inventory Manager is strictly scoped to their assigned `showroom_id`. Cross-showroom data leakage is prevented via server-side session checks.
