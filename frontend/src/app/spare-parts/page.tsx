@@ -6,6 +6,7 @@ import { apiClient } from '@/lib/api-client';
 import { PublicPageContainer } from '@/components/public/public-page-container';
 import { PublicPageHeader } from '@/components/public/public-page-header';
 import { SparePartCard } from '@/components/public/spare-part-card';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Search, SlidersHorizontal, PackageX, RefreshCw } from 'lucide-react';
@@ -108,15 +109,12 @@ export default function SparePartsCatalogPage() {
 
       {/* Grid / Skeletons / Error / Empty States */}
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((idx) => (
-            <div key={idx} className="h-80 rounded-2xl bg-gray-900/50 border border-gray-800/60 animate-pulse p-4 space-y-4">
-              <div className="h-40 bg-gray-800/60 rounded-xl" />
-              <div className="h-4 bg-gray-800/80 rounded w-3/4" />
-              <div className="h-4 bg-gray-800/60 rounded w-1/2" />
-            </div>
-          ))}
-        </div>
+        <LoadingSpinner
+          variant="card"
+          size="md"
+          title="Loading Spare Parts Catalog..."
+          message="Fetching OEM components and accessories from authorized showrooms..."
+        />
       ) : isError ? (
         <Card glass className="p-12 text-center space-y-4 border-rose-500/20 bg-rose-950/10">
           <PackageX className="w-12 h-12 text-rose-400 mx-auto" />
