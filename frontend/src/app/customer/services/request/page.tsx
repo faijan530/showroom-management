@@ -55,7 +55,9 @@ export default function CustomerServiceRequestPage() {
     initialTitle ? `Booking Package: ${initialTitle}` : ''
   );
   const [preferredDate, setPreferredDate] = useState('');
-  const [timeSlot, setTimeSlot] = useState('10:00 AM - 12:00 PM');
+  const [timeSlot, setTimeSlot] = useState('09:00 AM - 11:00 AM');
+  const [isCustomTime, setIsCustomTime] = useState(false);
+  const [customTime, setCustomTime] = useState('');
 
   // Fetch Showrooms
   const { data: showroomData } = useQuery<ShowroomsResponse>({
@@ -314,11 +316,11 @@ export default function CustomerServiceRequestPage() {
                   onChange={(e) => setPreferredDate(e.target.value)}
                 />
 
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400">
-                    Preferred Time Window
+                    Preferred Time Window / Slot
                   </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
                     {[
                       '09:00 AM - 11:00 AM',
                       '11:00 AM - 01:00 PM',
@@ -327,9 +329,12 @@ export default function CustomerServiceRequestPage() {
                       <button
                         key={slot}
                         type="button"
-                        onClick={() => setTimeSlot(slot)}
+                        onClick={() => {
+                          setIsCustomTime(false);
+                          setTimeSlot(slot);
+                        }}
                         className={`p-3 rounded-xl border text-xs font-bold text-center transition-all ${
-                          timeSlot === slot
+                          !isCustomTime && timeSlot === slot
                             ? 'bg-blue-600/20 border-blue-500 text-blue-300'
                             : 'bg-gray-900 border-gray-800 text-gray-400 hover:text-white'
                         }`}
@@ -337,7 +342,37 @@ export default function CustomerServiceRequestPage() {
                         {slot}
                       </button>
                     ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCustomTime(true);
+                        const initialCustom = customTime || '10:30 AM';
+                        setCustomTime(initialCustom);
+                        setTimeSlot(initialCustom);
+                      }}
+                      className={`p-3 rounded-xl border text-xs font-bold text-center transition-all ${
+                        isCustomTime
+                          ? 'bg-blue-600/20 border-blue-500 text-blue-300 shadow-sm'
+                          : 'bg-gray-900 border-gray-800 text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      ✏️ Custom Time
+                    </button>
                   </div>
+
+                  {isCustomTime && (
+                    <div className="pt-2">
+                      <Input
+                        label="Specify Custom Preferred Time (e.g. 10:30 AM, 04:15 PM)"
+                        placeholder="Enter preferred time (e.g. 10:30 AM)"
+                        value={customTime}
+                        onChange={(e) => {
+                          setCustomTime(e.target.value);
+                          setTimeSlot(e.target.value);
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-4 flex justify-between">
