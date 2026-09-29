@@ -4,106 +4,238 @@ import React from 'react';
 import Link from 'next/link';
 import { PublicPageContainer } from '@/components/public/public-page-container';
 import { PublicPageHeader } from '@/components/public/public-page-header';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Compass, Store, Wrench, Package, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import {
+  Compass,
+  Store,
+  Wrench,
+  Package,
+  ArrowRight,
+  ShieldCheck,
+  Building2,
+  Bike,
+  Car,
+  Sparkles,
+  CheckCircle2,
+  Zap,
+  Award,
+  Users,
+} from 'lucide-react';
 
 export default function AboutPage() {
   return (
     <PublicPageContainer>
       {/* Header Banner */}
       <PublicPageHeader
-        eyebrow="ABOUT THE PLATFORM"
-        title="Automotive Marketplace & Multi-Showroom Network"
-        description="Connecting vehicle buyers and owners with verified dealerships, genuine OEM spare parts, and certified service centers across India."
+        eyebrow="ABOUT MOTOHUB AUTOMOTIVE"
+        title="India's Multi-Showroom Marketplace Ecosystem"
+        description="Connecting vehicle buyers, owners, and dealerships through price transparency, genuine OEM spare parts, and certified workshop care."
         stats={[
           { label: 'Platform Architecture', value: 'Multi-Tenant SaaS' },
-          { label: 'Authorized Network', value: 'Verified Showrooms' },
+          { label: 'Authorized Network', value: 'Verified Dealerships' },
           { label: 'Service Coverage', value: 'Bikes & Cars' },
         ]}
       />
 
-      <div className="space-y-8 max-w-5xl mx-auto">
-        {/* Main Platform Mission Card */}
-        <Card glass className="p-8 space-y-6 border-gray-800/80 bg-gray-900/60 shadow-2xl relative overflow-hidden">
-          <div className="flex items-center gap-4 relative z-10">
-            <div className="p-3.5 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-xl shadow-blue-500/20 text-white">
-              <Compass className="w-8 h-8" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-black text-white tracking-tight">MotoHub Automotive Ecosystem</h2>
-              <p className="text-xs text-blue-400 font-mono mt-0.5">Unified Marketplace & Dealership Management Suite</p>
-            </div>
-          </div>
+      <div className="space-y-12">
+        {/* Main Platform Hero Showcase Card */}
+        <Card glass className="p-8 sm:p-10 border-blue-500/30 bg-gradient-to-br from-gray-900/90 via-gray-950 to-[#0b101c] shadow-2xl relative overflow-hidden">
+          {/* Ambient Glows */}
+          <div className="absolute -top-20 -right-20 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
 
-          <p className="text-sm text-gray-300 leading-relaxed relative z-10">
-            MotoHub is designed to redefine how customers interact with multi-brand vehicle dealerships, purchase original spare parts, and schedule workshop maintenance. Our platform bridges the gap between digital discovery and real-world showroom service, bringing complete price transparency and status tracking to every transaction.
-          </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center relative z-10">
+            <div className="space-y-6">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-xs font-bold text-blue-400">
+                <Sparkles className="w-4 h-4 text-blue-400" />
+                <span>ENTERPRISE AUTOMOTIVE SAAS</span>
+              </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 relative z-10">
-            <div className="p-4 rounded-xl bg-gray-950/80 border border-gray-800 space-y-1">
-              <div className="flex items-center gap-2 text-white font-bold text-sm">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" /> Transparent Ex-Showroom Pricing
+              <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+                Redefining the Dealership <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-cyan-400 bg-clip-text text-transparent">Marketplace Experience</span>
+              </h2>
+
+              <p className="text-sm text-gray-300 leading-relaxed">
+                MotoHub bridges the digital-to-showroom gap by providing a unified platform where customers can browse bikes and cars, order original manufacturer spare parts, and schedule workshop servicing—all with complete pricing transparency and real-time status tracking.
+              </p>
+
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="p-4 rounded-2xl bg-gray-950/80 border border-gray-800 space-y-1">
+                  <div className="flex items-center gap-2 text-white font-bold text-sm">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" /> Transparent Rates
+                  </div>
+                  <p className="text-xs text-gray-400">Ex-showroom pricing with zero hidden dealer markups.</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-gray-950/80 border border-gray-800 space-y-1">
+                  <div className="flex items-center gap-2 text-white font-bold text-sm">
+                    <Wrench className="w-4 h-4 text-blue-400" /> Live Job Stepper
+                  </div>
+                  <p className="text-xs text-gray-400">Real-time status updates from service request to completion.</p>
+                </div>
               </div>
-              <p className="text-xs text-gray-400">Clear breakdown of vehicle prices and genuine OEM spare part rates without hidden costs.</p>
             </div>
-            <div className="p-4 rounded-xl bg-gray-950/80 border border-gray-800 space-y-1">
-              <div className="flex items-center gap-2 text-white font-bold text-sm">
-                <Wrench className="w-4 h-4 text-blue-400" /> Live Workshop Job Tracking
+
+            {/* Showcase Image Banner */}
+            <div className="relative rounded-2xl overflow-hidden border border-gray-800/80 shadow-2xl h-80 sm:h-96 group">
+              <img
+                src="/hero_showroom.jpg"
+                alt="Authorized Showroom Network"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/30 to-transparent" />
+              <div className="absolute bottom-4 left-4 right-4 p-4 rounded-xl bg-gray-950/80 border border-gray-800 backdrop-blur-md flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-blue-400" />
+                  <span className="font-bold text-white">Verified Dealership Infrastructure</span>
+                </div>
+                <Badge variant="success" className="text-[10px]">Active Network</Badge>
               </div>
-              <p className="text-xs text-gray-400">Track service progress in real time from request booking to technician completion.</p>
             </div>
           </div>
         </Card>
 
-        {/* Core Pillars */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card glass className="p-6 space-y-3 border-gray-800/80 bg-gray-900/60 hover:border-blue-500/40 transition-all">
-            <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 w-fit">
-              <Store className="w-6 h-6" />
-            </div>
-            <h3 className="font-bold text-white text-base">Verified Dealerships</h3>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              Multi-tenant architecture ensuring isolated showroom scoping, verified contact details, and ex-showroom price transparency.
-            </p>
-          </Card>
-
-          <Card glass className="p-6 space-y-3 border-gray-800/80 bg-gray-900/60 hover:border-emerald-500/40 transition-all">
-            <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 w-fit">
-              <Wrench className="w-6 h-6" />
-            </div>
-            <h3 className="font-bold text-white text-base">Service Tracking</h3>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              Real-time service job status timeline stepper (<code className="text-emerald-400">REQUESTED</code> ➔ <code className="text-emerald-400">IN_PROGRESS</code> ➔ <code className="text-emerald-400">COMPLETED</code>) with technician remarks.
-            </p>
-          </Card>
-
-          <Card glass className="p-6 space-y-3 border-gray-800/80 bg-gray-900/60 hover:border-amber-500/40 transition-all">
-            <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 w-fit">
-              <Package className="w-6 h-6" />
-            </div>
-            <h3 className="font-bold text-white text-base">Spare Parts Control</h3>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              Genuine OEM parts catalog with vehicle compatibility search (BIKE/CAR/BOTH) and real-time inventory stock management.
-            </p>
-          </Card>
+        {/* Live Metrics Counter Bar */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: 'Authorized Listings', value: '120+', icon: Bike, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+            { label: 'Verified Dealerships', value: '25+', icon: Store, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+            { label: 'Genuine OEM Parts', value: '100%', icon: Package, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+            { label: 'Inspection Protocol', value: '50-Point', icon: Award, color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
+          ].map((metric, idx) => (
+            <Card key={idx} glass className="p-5 border-gray-800/80 bg-gray-900/50 hover:border-gray-700 transition-all flex items-center gap-4">
+              <div className={`p-3 rounded-2xl ${metric.bg} ${metric.color} shrink-0`}>
+                <metric.icon className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-2xl font-black text-white font-mono">{metric.value}</p>
+                <p className="text-xs text-gray-400 font-medium">{metric.label}</p>
+              </div>
+            </Card>
+          ))}
         </div>
 
-        {/* CTA Card */}
-        <Card glass className="p-8 text-center space-y-4 border-blue-500/30 bg-gradient-to-br from-gray-900 via-gray-950 to-[#0c1220] shadow-2xl">
-          <h3 className="text-xl sm:text-2xl font-black text-white">Ready to Explore the Marketplace?</h3>
-          <p className="text-xs sm:text-sm text-gray-300 max-w-md mx-auto leading-relaxed">
-            Browse bikes, cars, OEM spare parts, and certified workshop packages across our verified dealership network.
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-3 pt-2">
+        {/* Feature Visual Grid */}
+        <div className="space-y-6">
+          <div className="text-center space-y-2 max-w-xl mx-auto">
+            <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Core Marketplace Capabilities</h3>
+            <p className="text-xs text-gray-400">Integrated vehicle sales, OEM parts catalog, and workshop service automation.</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Card 1: Vehicles */}
+            <Card glass className="flex flex-col justify-between hover:border-blue-500/50 transition-all duration-300 group overflow-hidden shadow-xl">
+              <div>
+                <div className="h-44 bg-gradient-to-br from-gray-900 to-gray-950 border-b border-gray-800 relative overflow-hidden">
+                  <img
+                    src="/category_bikes.jpg"
+                    alt="Vehicles Catalog"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-85"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent opacity-60" />
+                  <div className="absolute top-3 left-3">
+                    <Badge variant="info" className="text-[10px]">Vehicles Catalog</Badge>
+                  </div>
+                </div>
+                <CardContent className="p-5 space-y-2">
+                  <h4 className="font-bold text-white text-base group-hover:text-blue-300 transition-colors">Bikes & Cars Marketplace</h4>
+                  <p className="text-xs text-gray-400 leading-relaxed">
+                    Explore new vehicle listings with complete engine specs, color options, and ex-showroom price transparency across verified showrooms.
+                  </p>
+                </CardContent>
+              </div>
+              <div className="p-5 pt-0">
+                <Link href="/vehicles">
+                  <Button variant="outline" className="w-full text-xs font-bold bg-gray-900 border-gray-800 hover:bg-blue-600 hover:text-white">
+                    Browse Vehicles <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+
+            {/* Card 2: Spare Parts */}
+            <Card glass className="flex flex-col justify-between hover:border-amber-500/50 transition-all duration-300 group overflow-hidden shadow-xl">
+              <div>
+                <div className="h-44 bg-gradient-to-br from-gray-900 to-gray-950 border-b border-gray-800 relative overflow-hidden">
+                  <img
+                    src="/category_engine.jpg"
+                    alt="Genuine OEM Spare Parts"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-85"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent opacity-60" />
+                  <div className="absolute top-3 left-3">
+                    <Badge variant="warning" className="text-[10px] bg-amber-500/20 text-amber-300 border-amber-500/30">OEM Spare Parts</Badge>
+                  </div>
+                </div>
+                <CardContent className="p-5 space-y-2">
+                  <h4 className="font-bold text-white text-base group-hover:text-amber-300 transition-colors">Genuine Parts & Accessories</h4>
+                  <p className="text-xs text-gray-400 leading-relaxed">
+                    Order original replacement components with OEM part codes, compatibility verification (BIKE/CAR/BOTH), and live stock status.
+                  </p>
+                </CardContent>
+              </div>
+              <div className="p-5 pt-0">
+                <Link href="/spare-parts">
+                  <Button variant="outline" className="w-full text-xs font-bold bg-gray-900 border-gray-800 hover:bg-amber-600 hover:text-white">
+                    Browse Spare Parts <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+
+            {/* Card 3: Servicing */}
+            <Card glass className="flex flex-col justify-between hover:border-emerald-500/50 transition-all duration-300 group overflow-hidden shadow-xl">
+              <div>
+                <div className="h-44 bg-gradient-to-br from-gray-900 to-gray-950 border-b border-gray-800 relative overflow-hidden">
+                  <img
+                    src="/category_brakes.jpg"
+                    alt="Workshop Servicing"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-85"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent opacity-60" />
+                  <div className="absolute top-3 left-3">
+                    <Badge variant="success" className="text-[10px] bg-emerald-500/20 text-emerald-300 border-emerald-500/30">Certified Workshop</Badge>
+                  </div>
+                </div>
+                <CardContent className="p-5 space-y-2">
+                  <h4 className="font-bold text-white text-base group-hover:text-emerald-300 transition-colors">Vehicle Servicing & Repair</h4>
+                  <p className="text-xs text-gray-400 leading-relaxed">
+                    Book fixed-rate maintenance packages featuring 50-point inspection checklists, certified technicians, and real-time status tracking.
+                  </p>
+                </CardContent>
+              </div>
+              <div className="p-5 pt-0">
+                <Link href="/services">
+                  <Button variant="outline" className="w-full text-xs font-bold bg-gray-900 border-gray-800 hover:bg-emerald-600 hover:text-white">
+                    Book Service Job <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+          </div>
+        </div>
+
+        {/* Dynamic CTA Banner */}
+        <Card glass className="p-8 sm:p-10 text-center space-y-6 border-blue-500/30 bg-gradient-to-br from-gray-900 via-gray-950 to-[#0c1220] shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-1/3 w-64 h-64 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="space-y-2 max-w-xl mx-auto relative z-10">
+            <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Ready to Experience MotoHub?</h3>
+            <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
+              Join thousands of vehicle owners and authorized showrooms using India's premier multi-tenant automotive marketplace.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 relative z-10 pt-2">
             <Link href="/vehicles" className="w-full sm:w-auto">
               <Button variant="primary" size="lg" className="w-full text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30">
-                Explore Vehicles Marketplace <ArrowRight className="w-4 h-4 ml-1.5" />
+                Explore Vehicle Marketplace <ArrowRight className="w-4 h-4 ml-1.5" />
               </Button>
             </Link>
-            <Link href="/auth/register" className="w-full sm:w-auto">
-              <Button variant="outline" size="lg" className="w-full text-xs font-bold bg-gray-900 border-gray-800 text-gray-200">
-                Create Account
+            <Link href="/showrooms" className="w-full sm:w-auto">
+              <Button variant="outline" size="lg" className="w-full text-xs font-bold bg-gray-900 border-gray-800 text-gray-200 hover:text-white">
+                Find Showroom Near You
               </Button>
             </Link>
           </div>
@@ -112,4 +244,5 @@ export default function AboutPage() {
     </PublicPageContainer>
   );
 }
+
 
