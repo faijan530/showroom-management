@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import { Wrench, CheckCircle2, Clock, IndianRupee, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
+import { Wrench, CheckCircle2, Clock, IndianRupee, ArrowRight, ShieldCheck, Sparkles, MessageSquare, Package } from 'lucide-react';
 
 interface ServicePackage {
   id: string;
@@ -35,8 +35,8 @@ export default function CustomerServicesPage() {
 
   return (
     <PageWrapper
-      title="Browse Vehicle Servicing Packages"
-      description="Select from our certified showroom maintenance packages, view pricing, and schedule a service appointment."
+      title="Browse Vehicle Servicing Packages & Showroom Enquiries"
+      description="Select from our certified showroom maintenance packages or ask showrooms about spare part availability."
     >
       <div className="space-y-6">
         {/* Banner Card */}
@@ -50,9 +50,34 @@ export default function CustomerServicesPage() {
               Every service includes a 50-point digital inspection report, genuine OEM spare parts, and transparent pricing.
             </p>
           </div>
-          <Link href="/customer/services/request">
-            <Button variant="primary" size="lg" className="shadow-lg shadow-blue-600/30">
-              Book Custom Service <ArrowRight className="w-4 h-4 ml-2" />
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <Link href="/customer/enquiries/new">
+              <Button variant="secondary" size="lg" className="w-full sm:w-auto bg-gray-900/80 border-gray-700 text-gray-200 hover:text-white">
+                <MessageSquare className="w-4 h-4 mr-2 text-amber-400" /> Ask Question / Part Stock
+              </Button>
+            </Link>
+            <Link href="/customer/services/request">
+              <Button variant="primary" size="lg" className="w-full sm:w-auto shadow-lg shadow-blue-600/30">
+                Book Service <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Quick Inquiry Banner */}
+        <div className="p-4 rounded-xl bg-gray-900/80 border border-gray-800 flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <Package className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-gray-200">Looking for specific Spare Parts or Vehicle Availability?</p>
+              <p className="text-[11px] text-gray-400">Send an inquiry directly to showroom managers to confirm stock and delivery dates.</p>
+            </div>
+          </div>
+          <Link href="/customer/enquiries/new">
+            <Button variant="secondary" className="text-xs bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30">
+              <MessageSquare className="w-3.5 h-3.5 mr-1.5" /> Submit Stock Inquiry
             </Button>
           </Link>
         </div>
