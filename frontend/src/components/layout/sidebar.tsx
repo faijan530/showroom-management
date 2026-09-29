@@ -41,6 +41,8 @@ export function Sidebar() {
       navItems = [
         { name: 'Browse Services', href: '/customer/services', icon: Wrench },
         { name: 'My Service Requests', href: '/customer/services/requests', icon: Package },
+        { name: 'Ask Part Availability', href: '/customer/enquiries/new', icon: MessageSquare },
+        { name: 'My Enquiries', href: '/customer/enquiries', icon: MessageSquare },
         { name: 'My Garage', href: '/customer/vehicles', icon: Bike },
       ];
     } else if (user.role === 'SUPERADMIN') {
