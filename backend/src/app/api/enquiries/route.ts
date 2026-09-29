@@ -17,6 +17,11 @@ const createEnquirySchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    let authUser: any = null;
+    try {
+      authUser = await authorizeRoles(req, ['USER', 'ADMIN', 'INVENTORY_MANAGER', 'SUPERADMIN', 'WORKER']);
+    } catch {}
+
     const body = await req.json();
     const validation = createEnquirySchema.safeParse(body);
 
@@ -30,6 +35,7 @@ export async function POST(req: NextRequest) {
     // Create Enquiry record
     const enquiry = await prisma.enquiry.create({
       data: {
+        userId: authUser?.id || null,
         customerName: data.customer_name,
         customerPhone: data.customer_phone,
         customerEmail: data.customer_email || null,
@@ -68,14 +74,19 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await authorizeRoles(req, ['ADMIN', 'INVENTORY_MANAGER', 'SUPERADMIN']);
+    const user = await authorizeRoles(req, ['ADMIN', 'INVENTORY_MANAGER', 'SUPERADMIN', 'USER']);
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status') as 'PENDING' | 'RESPONDED' | 'CLOSED' | null;
     const enquiryType = searchParams.get('enquiry_type') as 'GENERAL' | 'VEHICLE_PURCHASE' | 'SPARE_PART_PURCHASE' | 'SERVICE_INQUIRY' | null;
 
     const whereClause: any = {};
 
-    if (user.role !== 'SUPERADMIN' && user.showroomId) {
+    if (user.role === 'USER') {
+      whereClause.OR = [
+        { userId: user.id },
+        { customerPhone: user.phone },
+      ];
+    } else if (user.role !== 'SUPERADMIN' && user.showroomId) {
       whereClause.OR = [
         { targetShowroomId: user.showroomId },
         { broadcastToAll: true },
