@@ -22,6 +22,7 @@ export function Sidebar() {
         { name: 'Service Jobs', href: '/admin/services', icon: Wrench },
         { name: 'Vehicle Catalog', href: '/inventory/vehicles', icon: Bike },
         { name: 'Spare Parts Inventory', href: '/inventory/spare-parts', icon: Package },
+        { name: 'Stock Inquiries Queue', href: '/inventory/inquiries', icon: MessageSquare },
         { name: 'Customer Enquiries', href: '/admin/enquiries', icon: MessageSquare },
         { name: 'Staff Directory', href: '/admin/staff', icon: Users },
       ];
@@ -32,10 +33,9 @@ export function Sidebar() {
     } else if (user.role === 'INVENTORY_MANAGER') {
       navItems = [
         { name: 'Inventory Dashboard', href: '/inventory/dashboard', icon: Package },
-        { name: 'Service Jobs', href: '/admin/services', icon: Wrench },
         { name: 'Vehicle Catalog', href: '/inventory/vehicles', icon: Bike },
         { name: 'Spare Parts Inventory', href: '/inventory/spare-parts', icon: Package },
-        { name: 'Customer Enquiries', href: '/admin/enquiries', icon: MessageSquare },
+        { name: 'Stock Inquiries Queue', href: '/inventory/inquiries', icon: MessageSquare },
       ];
     } else if (user.role === 'USER') {
       navItems = [

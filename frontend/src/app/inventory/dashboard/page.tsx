@@ -4,7 +4,7 @@ import React from 'react';
 import { PageWrapper } from '@/components/layout/page-wrapper';
 import { StatCard } from '@/components/data-display/stat-card';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Package, Store, Cpu, AlertCircle, ArrowRight, Bike, Car } from 'lucide-react';
+import { Package, Store, Cpu, AlertCircle, ArrowRight, Bike, Car, MessageSquare } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth.store';
@@ -207,6 +207,26 @@ export default function InventoryDashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Stock Inquiries Banner Card */}
+        <Card glass className="bg-gradient-to-r from-blue-950/40 via-gray-900 to-indigo-950/40 border-blue-500/20">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-base text-gray-100">
+                <MessageSquare className="w-5 h-5 text-blue-400" />
+                <span>Stock Availability & Inquiries Queue</span>
+              </CardTitle>
+              <CardDescription>Respond to customer spare part queries & vehicle availability requests</CardDescription>
+            </div>
+            <Link
+              href="/inventory/inquiries"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl transition-all shadow-md"
+            >
+              <span>Open Inquiries Queue</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </CardHeader>
+        </Card>
       </div>
     </PageWrapper>
   );
