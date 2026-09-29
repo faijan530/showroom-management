@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Eye, Store } from 'lucide-react';
+import { Eye, Store, ShieldCheck, Tag } from 'lucide-react';
 
 export interface SparePartCardProps {
   id: string;
@@ -40,59 +40,68 @@ export function SparePartCard({
       : '/category_engine.jpg';
 
   return (
-    <Card glass className="flex flex-col justify-between hover:border-blue-500/50 transition-all duration-300 group overflow-hidden shadow-xl hover:shadow-blue-500/10">
+    <Card glass className="flex flex-col justify-between hover:border-amber-500/50 transition-all duration-300 group overflow-hidden shadow-xl hover:shadow-amber-500/10">
       <div>
         {/* Card Image Banner */}
-        <div className="h-44 bg-gradient-to-br from-gray-900 via-gray-950 to-[#0b101c] border-b border-gray-800/80 flex items-center justify-center p-3 relative overflow-hidden">
+        <div className="h-48 bg-gradient-to-br from-gray-900 via-gray-950 to-[#0b101c] border-b border-gray-800/80 flex items-center justify-center p-3 relative overflow-hidden">
           <img
             src={imageSrc}
             alt={part_name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 rounded-xl opacity-90"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 rounded-xl opacity-90"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent opacity-60" />
+          <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/30 to-transparent opacity-80" />
 
           {/* Badges */}
-          <div className="absolute top-3 left-3">
-            <Badge variant="info" className="shadow-lg backdrop-blur-md text-[10px]">
+          <div className="absolute top-3 left-3 flex items-center gap-2">
+            <Badge variant="info" className="shadow-lg backdrop-blur-md text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold">
               {category}
             </Badge>
           </div>
           <div className="absolute top-3 right-3">
             <Badge
               variant={stock_quantity > 0 ? 'success' : 'error'}
-              className="shadow-lg backdrop-blur-md text-[10px]"
+              className="shadow-lg backdrop-blur-md text-[10px] font-bold"
             >
               {stock_quantity > 0 ? `${stock_quantity} In Stock` : 'Out of Stock'}
             </Badge>
+          </div>
+
+          <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between">
+            <span className="text-[11px] font-mono font-bold text-amber-300 bg-gray-950/80 border border-amber-500/30 px-2 py-0.5 rounded-md flex items-center gap-1 backdrop-blur-md">
+              <Tag className="w-3 h-3 text-amber-400" /> {vehicle_type} Fitment
+            </span>
+            <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-md backdrop-blur-md flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3" /> Genuine OEM
+            </span>
           </div>
         </div>
 
         {/* Details */}
         <CardContent className="space-y-3 pt-4 p-5">
           <div>
-            <h3 className="font-bold text-white text-base group-hover:text-blue-400 transition-colors line-clamp-1">
+            <h3 className="font-extrabold text-white text-base group-hover:text-amber-300 transition-colors line-clamp-1">
               {part_name}
             </h3>
             <p className="text-xs font-mono text-gray-400 mt-1 flex items-center gap-1.5">
               <span>OEM Code:</span>
-              <code className="text-blue-300 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">
+              <code className="text-blue-300 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20 font-bold">
                 {part_code}
               </code>
             </p>
           </div>
 
           <div className="p-2.5 rounded-xl bg-gray-900/80 border border-gray-850 flex items-center justify-between text-xs">
-            <span className="text-gray-400">Compatibility: <strong className="text-gray-200">{vehicle_type}</strong></span>
+            <span className="text-gray-400">Category: <strong className="text-gray-200">{category}</strong></span>
             {showroom_name && (
               <span className="text-gray-400 flex items-center gap-1 text-[11px] truncate max-w-[130px]">
-                <Store className="w-3 h-3 text-emerald-400 shrink-0" /> {showroom_name}
+                <Store className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> {showroom_name}
               </span>
             )}
           </div>
 
           <div className="flex items-center justify-between pt-1">
-            <span className="text-xs text-gray-400 font-medium">Unit Price</span>
-            <span className="text-xl font-black text-emerald-400 font-mono tracking-tight">
+            <span className="text-xs text-gray-400 font-medium">Unit Rate</span>
+            <span className="text-2xl font-black text-emerald-400 font-mono tracking-tight">
               ₹{price.toLocaleString('en-IN')}
             </span>
           </div>
@@ -102,7 +111,7 @@ export function SparePartCard({
       {/* Action CTA */}
       <div className="p-5 pt-0">
         <Link href={`/spare-parts/${id}`}>
-          <Button variant="outline" className="w-full text-xs font-bold bg-gray-900/90 border-gray-800 hover:bg-blue-600 hover:border-blue-500 hover:text-white transition-all">
+          <Button variant="outline" className="w-full text-xs font-bold bg-gray-900/90 border-gray-800 hover:bg-amber-600 hover:border-amber-500 hover:text-white transition-all shadow-md">
             <Eye className="w-3.5 h-3.5 mr-1.5" /> View Details & Availability
           </Button>
         </Link>
@@ -110,3 +119,4 @@ export function SparePartCard({
     </Card>
   );
 }
+
