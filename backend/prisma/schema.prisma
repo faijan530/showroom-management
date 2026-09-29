@@ -56,9 +56,11 @@ model User {
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  showroom             Showroom?    @relation(fields: [showroomId], references: [id], onDelete: Cascade)
+  showroom             Showroom?         @relation(fields: [showroomId], references: [id], onDelete: Cascade)
   enquiries            Enquiry[]
-  assignedServiceJobs  ServiceJob[] @relation("WorkerAssignedJobs")
+  assignedServiceJobs  ServiceJob[]        @relation("WorkerAssignedJobs")
+  customerVehicles     CustomerVehicle[]
+  createdServiceJobs   ServiceJob[]        @relation("CustomerCreatedJobs")
 
   @@map("users")
 }
@@ -151,6 +153,24 @@ model Enquiry {
   @@map("enquiries")
 }
 
+model CustomerVehicle {
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String      @map("user_id") @db.Uuid
+  title       String
+  vehicleType VehicleType @default(BIKE) @map("vehicle_type")
+  regNumber   String      @map("reg_number")
+  brand       String
+  model       String
+  year        Int
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceJobs ServiceJob[]
+
+  @@map("customer_vehicles")
+}
+
 enum WorkerApproval {
   PENDING
   APPROVED
@@ -172,11 +192,15 @@ enum ServiceJobStatus {
 model ServiceJob {
   id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   showroomId         String           @map("showroom_id") @db.Uuid
+  userId             String?          @map("user_id") @db.Uuid
+  customerVehicleId  String?          @map("customer_vehicle_id") @db.Uuid
   customerName       String           @map("customer_name")
   customerPhone      String           @map("customer_phone")
   vehicleType        VehicleType      @default(BIKE) @map("vehicle_type")
   vehicleDetails     String           @map("vehicle_details")
   serviceDescription String           @map("service_description")
+  preferredDate      DateTime?        @map("preferred_date") @db.Timestamptz
+  timeSlot           String?          @map("time_slot")
   assignedWorkerId   String?          @map("assigned_worker_id") @db.Uuid
   workerApproval     WorkerApproval   @default(PENDING) @map("worker_approval")
   status             ServiceJobStatus @default(REQUESTED)
@@ -185,11 +209,14 @@ model ServiceJob {
   createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz
   updatedAt          DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  showroom       Showroom @relation(fields: [showroomId], references: [id], onDelete: Cascade)
-  assignedWorker User?    @relation("WorkerAssignedJobs", fields: [assignedWorkerId], references: [id], onDelete: SetNull)
+  showroom        Showroom         @relation(fields: [showroomId], references: [id], onDelete: Cascade)
+  user            User?            @relation("CustomerCreatedJobs", fields: [userId], references: [id], onDelete: SetNull)
+  customerVehicle CustomerVehicle? @relation(fields: [customerVehicleId], references: [id], onDelete: SetNull)
+  assignedWorker  User?            @relation("WorkerAssignedJobs", fields: [assignedWorkerId], references: [id], onDelete: SetNull)
 
   @@map("service_jobs")
 }
+
 
 
 

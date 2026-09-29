@@ -37,6 +37,12 @@ export function Sidebar() {
         { name: 'Spare Parts Inventory', href: '/inventory/spare-parts', icon: Package },
         { name: 'Customer Enquiries', href: '/admin/enquiries', icon: MessageSquare },
       ];
+    } else if (user.role === 'USER') {
+      navItems = [
+        { name: 'Browse Services', href: '/customer/services', icon: Wrench },
+        { name: 'My Service Requests', href: '/customer/services/requests', icon: Package },
+        { name: 'My Garage', href: '/customer/vehicles', icon: Bike },
+      ];
     } else if (user.role === 'SUPERADMIN') {
       navItems = [
         { name: 'Platform Dashboard', href: '/platform/dashboard', icon: ShieldAlert },
