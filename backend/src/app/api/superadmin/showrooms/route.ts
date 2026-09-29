@@ -79,9 +79,10 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    await authorizeRoles(req, ['SUPERADMIN']);
+    await authorizeRoles(req, ['SUPERADMIN', 'ADMIN', 'INVENTORY_MANAGER', 'WORKER', 'USER']);
 
     const showrooms = await prisma.showroom.findMany({
+      where: { status: 'ACTIVE' },
       include: {
         _count: {
           select: { users: true },
