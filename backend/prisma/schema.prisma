@@ -1,0 +1,51 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  SUPERADMIN
+  ADMIN
+  WORKER
+  INVENTORY_MANAGER
+  USER
+
+  @@map("user_role")
+}
+
+model Showroom {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String
+  code         String   @unique
+  address      String
+  contactPhone String   @map("contact_phone")
+  contactEmail String   @map("contact_email")
+  logoUrl      String?  @map("logo_url")
+  status       String   @default("ACTIVE")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  users User[]
+
+  @@map("showrooms")
+}
+
+model User {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  showroomId   String?   @map("showroom_id") @db.Uuid
+  fullName     String    @map("full_name")
+  phone        String    @unique
+  email        String?
+  passwordHash String    @map("password_hash")
+  role         UserRole  @default(USER)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  showroom Showroom? @relation(fields: [showroomId], references: [id], onDelete: Cascade)
+
+  @@map("users")
+}
