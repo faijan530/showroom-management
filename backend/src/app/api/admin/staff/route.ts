@@ -79,3 +79,39 @@ export async function POST(req: NextRequest) {
     return ApiResponse.error('Internal server error', 500, 'INTERNAL_SERVER_ERROR');
   }
 }
+
+export async function GET(req: NextRequest) {
+  try {
+    const adminUser = await authorizeRoles(req, ['ADMIN', 'SUPERADMIN']);
+
+    if (adminUser.role === 'ADMIN' && !adminUser.showroomId) {
+      return ApiResponse.error('Admin is not assigned to any showroom', 400, 'NO_SHOWROOM_ASSIGNED');
+    }
+
+    const staffMembers = await prisma.user.findMany({
+      where: {
+        showroomId: adminUser.showroomId || undefined,
+        role: {
+          in: ['WORKER', 'INVENTORY_MANAGER'],
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const formattedStaff = staffMembers.map((user) => ({
+      id: user.id,
+      full_name: user.fullName,
+      phone: user.phone,
+      email: user.email,
+      role: user.role,
+      created_at: user.createdAt,
+    }));
+
+    return ApiResponse.success({ staff: formattedStaff });
+  } catch (error) {
+    if (error instanceof AppError) {
+      return ApiResponse.error(error.message, error.statusCode, error.code);
+    }
+    return ApiResponse.error('Internal server error', 500, 'INTERNAL_SERVER_ERROR');
+  }
+}
