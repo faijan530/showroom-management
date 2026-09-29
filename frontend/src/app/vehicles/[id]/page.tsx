@@ -5,11 +5,11 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth.store';
-import { PageWrapper } from '@/components/layout/page-wrapper';
+import { PublicPageContainer } from '@/components/public/public-page-container';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bike, Car, Store, Phone, Mail, MapPin, ArrowLeft, Wrench, MessageSquare, ShieldCheck } from 'lucide-react';
+import { Store, Phone, Mail, MapPin, ArrowLeft, Wrench, MessageSquare, ShieldCheck, Sparkles } from 'lucide-react';
 
 interface VehicleDetailResponse {
   success: boolean;
@@ -65,164 +65,180 @@ export default function VehicleDetailPage() {
 
   if (isLoading) {
     return (
-      <PageWrapper title="Loading Vehicle Specifications...">
-        <div className="p-12 text-center text-gray-400 font-medium">Fetching product specifications from showroom inventory...</div>
-      </PageWrapper>
+      <PublicPageContainer>
+        <div className="h-96 rounded-3xl bg-gray-900/50 border border-gray-800 animate-pulse p-8 flex items-center justify-center text-gray-400">
+          Loading vehicle specifications...
+        </div>
+      </PublicPageContainer>
     );
   }
 
   if (isError || !vehicle) {
     return (
-      <PageWrapper title="Vehicle Not Found">
-        <div className="p-8 text-center bg-gray-900 rounded-xl border border-gray-800 space-y-4">
-          <p className="text-gray-400">The requested vehicle listing could not be found or has been unlisted.</p>
-          <Button variant="outline" onClick={() => router.push('/')}>
-            <ArrowLeft className="w-4 h-4 mr-1.5" /> Return to Marketplace Catalog
+      <PublicPageContainer>
+        <Card glass className="p-12 text-center border-gray-800 bg-gray-900/40 space-y-4">
+          <p className="text-gray-400 text-sm">The requested vehicle listing could not be found or has been unlisted.</p>
+          <Button variant="outline" onClick={() => router.push('/vehicles')} className="border-gray-800 text-xs">
+            <ArrowLeft className="w-4 h-4 mr-1.5" /> Return to Vehicles Catalog
           </Button>
-        </div>
-      </PageWrapper>
+        </Card>
+      </PublicPageContainer>
     );
   }
+
+  const imageSrc =
+    vehicle.image_url && vehicle.image_url.trim().length > 0
+      ? vehicle.image_url
+      : vehicle.type === 'BIKE'
+      ? '/category_bikes.jpg'
+      : '/category_cars.jpg';
 
   const enquiryPath = `/customer/enquiries/new?targetShowroomId=${vehicle.showroom_id}&enquiryType=VEHICLE_PURCHASE&vehicleDetails=${encodeURIComponent(`${vehicle.title} (${vehicle.brand} ${vehicle.model})`)}`;
   const serviceBookingPath = `/customer/services/request?targetShowroomId=${vehicle.showroom_id}&vehicleType=${vehicle.type}&vehicleDetails=${encodeURIComponent(`${vehicle.brand} ${vehicle.model}`)}`;
 
   return (
-    <PageWrapper
-      title={`${vehicle.brand} ${vehicle.model} (${vehicle.year})`}
-      description={`Authorized Dealership Listing — ${vehicle.showroom?.name || 'Showroom Network'}`}
-      action={
-        <Button variant="outline" size="sm" onClick={() => router.back()}>
-          <ArrowLeft className="w-4 h-4 mr-1.5" /> Back to Catalog
+    <PublicPageContainer>
+      {/* Top Bar Navigation */}
+      <div className="flex items-center justify-between">
+        <Button variant="outline" size="sm" onClick={() => router.back()} className="border-gray-800 text-xs bg-gray-900/80">
+          <ArrowLeft className="w-4 h-4 mr-1.5" /> Back to Vehicles
         </Button>
-      }
-    >
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Vehicle Showcase Card */}
-          <Card glass className="overflow-hidden space-y-4">
-            <div className="h-72 bg-gradient-to-br from-gray-900 to-gray-950 flex items-center justify-center p-6 border-b border-gray-800 relative">
-              {vehicle.image_url ? (
-                <img
-                  src={vehicle.image_url}
-                  alt={vehicle.title}
-                  className="max-h-full object-contain drop-shadow-xl"
-                />
-              ) : (
-                <div className="text-center text-gray-600 space-y-2">
-                  {vehicle.type === 'BIKE' ? <Bike className="w-20 h-20 mx-auto" /> : <Car className="w-20 h-20 mx-auto" />}
-                  <p className="text-xs uppercase font-mono tracking-widest text-gray-500">Official Product Image</p>
-                </div>
-              )}
-              <div className="absolute top-4 left-4">
-                <Badge variant={vehicle.type === 'BIKE' ? 'info' : 'neutral'}>
-                  {vehicle.type}
-                </Badge>
+        <div className="flex items-center gap-2 text-xs text-gray-400">
+          <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+          <span>Listing ID: <code className="text-gray-300 font-mono">{vehicle.id.slice(0, 8)}</code></span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Vehicle Image Showcase */}
+        <Card glass className="overflow-hidden border-gray-800/80 bg-gray-900/40 space-y-4 shadow-2xl">
+          <div className="h-80 sm:h-96 bg-gradient-to-br from-gray-900 via-gray-950 to-[#0b101c] flex items-center justify-center p-4 relative overflow-hidden border-b border-gray-800/80">
+            <img
+              src={imageSrc}
+              alt={vehicle.title}
+              className="w-full h-full object-cover rounded-2xl shadow-2xl"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent opacity-60 pointer-events-none" />
+
+            <div className="absolute top-4 left-4">
+              <Badge variant={vehicle.type === 'BIKE' ? 'info' : 'neutral'} className="shadow-lg backdrop-blur-md">
+                {vehicle.type}
+              </Badge>
+            </div>
+            <div className="absolute top-4 right-4">
+              <Badge variant={vehicle.stock_quantity > 0 ? 'success' : 'error'} className="shadow-lg backdrop-blur-md">
+                {vehicle.stock_quantity > 0 ? `${vehicle.stock_quantity} Units Available` : 'Out of Stock'}
+              </Badge>
+            </div>
+          </div>
+
+          <CardContent className="space-y-4 p-6 pt-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-black text-white">{vehicle.title}</h1>
+                <p className="text-xs text-gray-400 mt-1 font-medium">
+                  {vehicle.brand} • {vehicle.model} • Manufacturing Year: {vehicle.year}
+                </p>
               </div>
-              <div className="absolute top-4 right-4">
-                <Badge variant={vehicle.stock_quantity > 0 ? 'success' : 'error'}>
-                  {vehicle.stock_quantity > 0 ? `${vehicle.stock_quantity} Units Available` : 'Out of Stock'}
-                </Badge>
+              <div className="text-left sm:text-right shrink-0">
+                <p className="text-xs text-gray-400 font-semibold uppercase tracking-wider">Ex-Showroom Price</p>
+                <p className="text-3xl font-black text-emerald-400 font-mono tracking-tight">
+                  ₹{vehicle.price.toLocaleString('en-IN')}
+                </p>
               </div>
             </div>
 
-            <CardContent className="space-y-4 pt-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-bold text-white">{vehicle.title}</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">{vehicle.brand} • {vehicle.model} • {vehicle.color}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-gray-400 font-medium">Ex-Showroom Price</p>
-                  <p className="text-2xl font-black text-emerald-400">₹{vehicle.price.toLocaleString('en-IN')}</p>
-                </div>
+            {vehicle.description && (
+              <div className="p-4 rounded-2xl bg-gray-900/80 border border-gray-800 text-xs space-y-1.5">
+                <p className="font-bold text-gray-200 uppercase tracking-wider text-[11px] text-blue-400">Description & Highlights</p>
+                <p className="leading-relaxed text-gray-300">{vehicle.description}</p>
               </div>
+            )}
+          </CardContent>
+        </Card>
 
-              {vehicle.description && (
-                <div className="p-3.5 rounded-xl bg-gray-900/70 border border-gray-800 text-xs text-gray-300 space-y-1">
-                  <p className="font-semibold text-gray-200">Vehicle Description:</p>
-                  <p className="leading-relaxed text-gray-400">{vehicle.description}</p>
-                </div>
-              )}
+        {/* Specifications & Showroom Card */}
+        <div className="space-y-6">
+          <Card glass className="border-gray-800/80 bg-gray-900/60">
+            <CardHeader className="border-b border-gray-800/60 pb-4">
+              <CardTitle className="text-base flex items-center gap-2 text-white">
+                <ShieldCheck className="w-4 h-4 text-blue-400" /> Technical Specifications
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-3.5 text-xs pt-4">
+              <div className="p-3.5 rounded-xl bg-gray-950/80 border border-gray-800/80 space-y-1">
+                <span className="text-gray-400 text-[11px] block font-medium">Manufacturer / Brand</span>
+                <span className="font-extrabold text-white text-sm">{vehicle.brand}</span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-gray-950/80 border border-gray-800/80 space-y-1">
+                <span className="text-gray-400 text-[11px] block font-medium">Model Variant</span>
+                <span className="font-extrabold text-white text-sm">{vehicle.model}</span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-gray-950/80 border border-gray-800/80 space-y-1">
+                <span className="text-gray-400 text-[11px] block font-medium">Manufacturing Year</span>
+                <span className="font-extrabold text-white text-sm">{vehicle.year}</span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-gray-950/80 border border-gray-800/80 space-y-1">
+                <span className="text-gray-400 text-[11px] block font-medium">Engine Displacement</span>
+                <span className="font-extrabold text-blue-400 font-mono text-sm">{vehicle.engine_cc} CC</span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-gray-950/80 border border-gray-800/80 space-y-1">
+                <span className="text-gray-400 text-[11px] block font-medium">Color Finish</span>
+                <span className="font-extrabold text-white text-sm capitalize">{vehicle.color}</span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-gray-950/80 border border-gray-800/80 space-y-1">
+                <span className="text-gray-400 text-[11px] block font-medium">Body Type</span>
+                <span className="font-extrabold text-white text-sm">{vehicle.type}</span>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Specifications & Showroom Contact */}
-          <div className="space-y-6">
-            {/* Technical Specs Grid */}
-            <Card glass>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-blue-400" /> Technical Specifications
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-2 gap-3 text-xs">
-                <div className="p-3 rounded-lg bg-gray-900 border border-gray-800">
-                  <span className="text-gray-500 block">Brand</span>
-                  <span className="font-bold text-gray-200 text-sm">{vehicle.brand}</span>
+          {/* Dealership Details & Action CTAs */}
+          <Card glass className="border-gray-800/80 bg-gray-900/60 space-y-4">
+            <CardHeader className="border-b border-gray-800/60 pb-4">
+              <CardTitle className="text-base flex items-center gap-2 text-white">
+                <Store className="w-4 h-4 text-emerald-400" /> Authorized Dealership Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-xs pt-2">
+              <div className="p-4 rounded-2xl bg-gray-950/80 border border-gray-800 space-y-2">
+                <p className="font-bold text-white text-sm">{vehicle.showroom?.name || 'Authorized Showroom'}</p>
+                <p className="text-gray-400 flex items-center gap-2 text-xs">
+                  <MapPin className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                  {vehicle.showroom?.address || 'Verified Dealership Address'}
+                </p>
+                <div className="flex items-center gap-4 text-gray-300 pt-2 border-t border-gray-800/60 font-mono">
+                  <span className="flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-emerald-400" /> {vehicle.showroom?.contactPhone || 'N/A'}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-blue-400" /> {vehicle.showroom?.contactEmail || 'N/A'}
+                  </span>
                 </div>
-                <div className="p-3 rounded-lg bg-gray-900 border border-gray-800">
-                  <span className="text-gray-500 block">Model</span>
-                  <span className="font-bold text-gray-200 text-sm">{vehicle.model}</span>
-                </div>
-                <div className="p-3 rounded-lg bg-gray-900 border border-gray-800">
-                  <span className="text-gray-500 block">Manufacturing Year</span>
-                  <span className="font-bold text-gray-200 text-sm">{vehicle.year}</span>
-                </div>
-                <div className="p-3 rounded-lg bg-gray-900 border border-gray-800">
-                  <span className="text-gray-500 block">Engine Capacity</span>
-                  <span className="font-bold text-gray-200 text-sm">{vehicle.engine_cc} CC</span>
-                </div>
-                <div className="p-3 rounded-lg bg-gray-900 border border-gray-800">
-                  <span className="text-gray-500 block">Color Variant</span>
-                  <span className="font-bold text-gray-200 text-sm">{vehicle.color}</span>
-                </div>
-                <div className="p-3 rounded-lg bg-gray-900 border border-gray-800">
-                  <span className="text-gray-500 block">Vehicle Category</span>
-                  <span className="font-bold text-gray-200 text-sm">{vehicle.type}</span>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Dealership Info Box */}
-            <Card glass>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Store className="w-4 h-4 text-emerald-400" /> Authorized Dealership
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-xs">
-                <div className="p-3.5 rounded-xl bg-gray-900 border border-gray-800 space-y-2">
-                  <p className="font-bold text-white text-sm">{vehicle.showroom?.name || 'Showroom Dealership'}</p>
-                  <p className="text-gray-400 flex items-center gap-2">
-                    <MapPin className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-                    {vehicle.showroom?.address || 'Showroom Address'}
-                  </p>
-                  <div className="flex items-center gap-4 text-gray-300 pt-1 font-mono">
-                    <span className="flex items-center gap-1">
-                      <Phone className="w-3 h-3 text-emerald-400" /> {vehicle.showroom?.contactPhone}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Mail className="w-3 h-3 text-blue-400" /> {vehicle.showroom?.contactEmail}
-                    </span>
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <Button
+                  variant="primary"
+                  onClick={() => handleProtectedAction(enquiryPath)}
+                  className="w-full font-bold text-xs bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30"
+                >
+                  <MessageSquare className="w-4 h-4 mr-1.5" /> Ask Availability / Price
+                </Button>
 
-                {/* Direct Protected Action Buttons */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <Button variant="primary" onClick={() => handleProtectedAction(enquiryPath)} className="w-full font-bold text-xs">
-                    <MessageSquare className="w-4 h-4 mr-1.5" /> Send Purchase Enquiry
-                  </Button>
-
-                  <Button variant="outline" onClick={() => handleProtectedAction(serviceBookingPath)} className="w-full font-bold text-xs">
-                    <Wrench className="w-4 h-4 mr-1.5" /> Book Service Job
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                <Button
+                  variant="outline"
+                  onClick={() => handleProtectedAction(serviceBookingPath)}
+                  className="w-full font-bold text-xs bg-gray-950 border-gray-800 hover:bg-gray-800 text-gray-200"
+                >
+                  <Wrench className="w-4 h-4 mr-1.5" /> Book Service Appointment
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
-    </PageWrapper>
+    </PublicPageContainer>
   );
 }
+

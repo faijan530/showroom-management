@@ -1,15 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import { PageWrapper } from '@/components/layout/page-wrapper';
-import { Button } from '@/components/ui/button';
+import { PublicPageContainer } from '@/components/public/public-page-container';
+import { PublicPageHeader } from '@/components/public/public-page-header';
+import { VehicleCard } from '@/components/public/vehicle-card';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Bike, Car, Search, Eye, SlidersHorizontal, ArrowLeft } from 'lucide-react';
+import { Search, SlidersHorizontal, PackageX, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface VehiclesResponse {
   success: boolean;
@@ -28,6 +28,9 @@ interface VehiclesResponse {
       stock_quantity: number;
       description?: string;
       image_url?: string;
+      showroom?: {
+        name: string;
+      };
     }>;
   };
 }
@@ -36,7 +39,7 @@ export default function VehiclesCatalogPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'BIKE' | 'CAR'>('ALL');
 
-  const { data, isLoading } = useQuery<VehiclesResponse>({
+  const { data, isLoading, isError, refetch } = useQuery<VehiclesResponse>({
     queryKey: ['public-vehicles-catalog', typeFilter],
     queryFn: () => apiClient<VehiclesResponse>(`/vehicles${typeFilter !== 'ALL' ? `?type=${typeFilter}` : ''}`),
   });
@@ -51,117 +54,111 @@ export default function VehiclesCatalogPage() {
   );
 
   return (
-    <PageWrapper
-      title="Vehicles Catalog (Bikes & Cars)"
-      description="Browse authorized dealership listings, specs, ex-showroom pricing, and stock status."
-    >
-      <div className="space-y-6">
-        {/* Search & Filter Controls */}
-        <Card glass>
-          <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="w-full md:w-96 relative">
-              <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-500" />
-              <Input
-                placeholder="Search by brand, model, or vehicle title..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+    <PublicPageContainer>
+      {/* Header Banner */}
+      <PublicPageHeader
+        eyebrow="VEHICLE MARKETPLACE"
+        title="Explore Authorized Vehicles"
+        description="Discover bikes and cars from verified showrooms across the network with full specs and ex-showroom pricing."
+        stats={[
+          { label: 'Listings Available', value: `${vehicles.length}+` },
+          { label: 'Authorized Network', value: 'Verified Dealerships' },
+          { label: 'Pricing', value: 'Transparent Ex-Showroom' },
+        ]}
+      />
 
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-400 font-semibold flex items-center gap-1">
-                <SlidersHorizontal className="w-3.5 h-3.5" /> Category:
-              </span>
-              <button
-                onClick={() => setTypeFilter('ALL')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  typeFilter === 'ALL' ? 'bg-blue-600 text-white' : 'bg-gray-900 border border-gray-800 text-gray-400'
-                }`}
-              >
-                All Vehicles
-              </button>
-              <button
-                onClick={() => setTypeFilter('BIKE')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  typeFilter === 'BIKE' ? 'bg-blue-600 text-white' : 'bg-gray-900 border border-gray-800 text-gray-400'
-                }`}
-              >
-                Bikes
-              </button>
-              <button
-                onClick={() => setTypeFilter('CAR')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  typeFilter === 'CAR' ? 'bg-blue-600 text-white' : 'bg-gray-900 border border-gray-800 text-gray-400'
-                }`}
-              >
-                Cars
-              </button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Vehicles Grid */}
-        {isLoading ? (
-          <div className="p-12 text-center text-sm text-gray-400">Loading vehicle listings...</div>
-        ) : filtered.length === 0 ? (
-          <div className="p-12 text-center bg-gray-900 rounded-2xl border border-gray-800 text-gray-400">
-            No vehicle listings match your criteria.
+      {/* Search & Category Filter Bar */}
+      <Card glass className="border-gray-800/80 bg-gray-900/60 backdrop-blur-xl">
+        <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="w-full md:w-96 relative">
+            <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-500" />
+            <Input
+              placeholder="Search by brand, model, or title..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-gray-950/80 border-gray-800 text-white placeholder:text-gray-500"
+            />
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((vehicle) => (
-              <Card key={vehicle.id} glass className="flex flex-col justify-between hover:border-blue-500/40 transition-all overflow-hidden group">
-                <div>
-                  <div className="h-48 bg-gray-900 border-b border-gray-800 flex items-center justify-center p-4 relative">
-                    {vehicle.image_url ? (
-                      <img src={vehicle.image_url} alt={vehicle.title} className="max-h-full object-contain group-hover:scale-105 transition-transform" />
-                    ) : (
-                      <div className="text-center text-gray-600">
-                        {vehicle.type === 'BIKE' ? <Bike className="w-12 h-12 mx-auto" /> : <Car className="w-12 h-12 mx-auto" />}
-                        <p className="text-[10px] uppercase font-mono tracking-wider text-gray-500 mt-1">Authorized Listing</p>
-                      </div>
-                    )}
-                    <div className="absolute top-3 left-3">
-                      <Badge variant={vehicle.type === 'BIKE' ? 'info' : 'neutral'}>{vehicle.type}</Badge>
-                    </div>
-                    <div className="absolute top-3 right-3">
-                      <Badge variant={vehicle.stock_quantity > 0 ? 'success' : 'error'}>
-                        {vehicle.stock_quantity > 0 ? `${vehicle.stock_quantity} In Stock` : 'Sold Out'}
-                      </Badge>
-                    </div>
-                  </div>
 
-                  <CardContent className="space-y-2 pt-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-bold text-white text-base">{vehicle.title}</h3>
-                        <p className="text-xs text-gray-400">{vehicle.brand} • {vehicle.model} ({vehicle.year})</p>
-                      </div>
-                      <span className="text-xs font-mono text-gray-400 bg-gray-900 px-2 py-1 rounded border border-gray-800">
-                        {vehicle.engine_cc} CC
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-800/60">
-                      <span className="text-xs text-gray-400">Color: {vehicle.color}</span>
-                      <span className="text-lg font-black text-emerald-400">₹{vehicle.price.toLocaleString('en-IN')}</span>
-                    </div>
-                  </CardContent>
-                </div>
-
-                <div className="p-4 pt-0">
-                  <Link href={`/vehicles/${vehicle.id}`}>
-                    <Button variant="outline" className="w-full text-xs">
-                      <Eye className="w-3.5 h-3.5 mr-1.5" /> View Product Specifications
-                    </Button>
-                  </Link>
-                </div>
-              </Card>
+          <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+            <span className="text-xs text-gray-400 font-semibold flex items-center gap-1.5 mr-1">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-blue-400" /> Filter:
+            </span>
+            {(['ALL', 'BIKE', 'CAR'] as const).map((category) => (
+              <button
+                key={category}
+                onClick={() => setTypeFilter(category)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
+                  typeFilter === category
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border border-blue-500'
+                    : 'bg-gray-950/80 border border-gray-800 text-gray-400 hover:text-white hover:border-gray-700'
+                }`}
+              >
+                {category === 'ALL' ? 'All Vehicles' : category === 'BIKE' ? 'Bikes' : 'Cars'}
+              </button>
             ))}
           </div>
-        )}
-      </div>
-    </PageWrapper>
+        </CardContent>
+      </Card>
+
+      {/* Vehicles Grid / Skeleton / Error / Empty States */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map((idx) => (
+            <div key={idx} className="h-96 rounded-2xl bg-gray-900/50 border border-gray-800/60 animate-pulse p-4 space-y-4">
+              <div className="h-48 bg-gray-800/60 rounded-xl" />
+              <div className="h-4 bg-gray-800/80 rounded w-3/4" />
+              <div className="h-4 bg-gray-800/60 rounded w-1/2" />
+              <div className="h-8 bg-gray-800/40 rounded mt-4" />
+            </div>
+          ))}
+        </div>
+      ) : isError ? (
+        <Card glass className="p-12 text-center space-y-4 border-rose-500/20 bg-rose-950/10">
+          <PackageX className="w-12 h-12 text-rose-400 mx-auto" />
+          <div className="space-y-1">
+            <h3 className="text-lg font-bold text-white">Unable to Load Vehicles</h3>
+            <p className="text-xs text-gray-400">There was an issue connecting to the marketplace API server.</p>
+          </div>
+          <Button onClick={() => refetch()} variant="outline" className="border-rose-500/30 text-rose-300 hover:bg-rose-950">
+            <RefreshCw className="w-3.5 h-3.5 mr-2" /> Retry Connection
+          </Button>
+        </Card>
+      ) : filtered.length === 0 ? (
+        <Card glass className="p-12 text-center space-y-4 border-gray-800 bg-gray-900/40">
+          <PackageX className="w-12 h-12 text-gray-500 mx-auto" />
+          <div className="space-y-1">
+            <h3 className="text-lg font-bold text-white">No Vehicles Found</h3>
+            <p className="text-xs text-gray-400">Try adjusting your search keywords or switching vehicle category filters.</p>
+          </div>
+          {searchQuery && (
+            <Button onClick={() => setSearchQuery('')} variant="outline" className="text-xs border-gray-800">
+              Clear Search Query
+            </Button>
+          )}
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.map((vehicle) => (
+            <VehicleCard
+              key={vehicle.id}
+              id={vehicle.id}
+              title={vehicle.title}
+              type={vehicle.type}
+              brand={vehicle.brand}
+              model={vehicle.model}
+              year={vehicle.year}
+              price={vehicle.price}
+              color={vehicle.color}
+              engine_cc={vehicle.engine_cc}
+              stock_quantity={vehicle.stock_quantity}
+              showroom_name={vehicle.showroom?.name}
+              image_url={vehicle.image_url}
+            />
+          ))}
+        </div>
+      )}
+    </PublicPageContainer>
   );
 }
+
