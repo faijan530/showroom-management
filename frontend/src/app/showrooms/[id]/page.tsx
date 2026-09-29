@@ -35,7 +35,7 @@ export default function ShowroomDetailPage() {
 
   const { data, isLoading, isError } = useQuery<ShowroomDetailResponse>({
     queryKey: ['public-showroom-detail', id],
-    queryFn: () => apiClient<ShowroomDetailResponse>(`/superadmin/showrooms/${id}`),
+    queryFn: () => apiClient<ShowroomDetailResponse>(`/showrooms/${id}`),
     enabled: !!id,
   });
 

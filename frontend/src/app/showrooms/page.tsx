@@ -32,7 +32,7 @@ export default function ShowroomsDirectoryPage() {
 
   const { data, isLoading, isError, refetch } = useQuery<ShowroomsResponse>({
     queryKey: ['public-showrooms-directory'],
-    queryFn: () => apiClient<ShowroomsResponse>('/superadmin/showrooms'),
+    queryFn: () => apiClient<ShowroomsResponse>('/showrooms'),
   });
 
   const showrooms = data?.data?.showrooms || [];
