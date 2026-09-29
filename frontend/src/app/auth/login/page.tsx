@@ -105,13 +105,6 @@ export default function LoginPage() {
             <Button variant="primary" size="lg" className="w-full mt-2" isLoading={isSubmitting}>
               Sign In
             </Button>
-
-            <div className="pt-4 text-center text-xs text-gray-400 border-t border-gray-800/80">
-              Don&apos;t have an account?{' '}
-              <Link href="/auth/register" className="text-blue-400 font-semibold hover:underline">
-                Create Account
-              </Link>
-            </div>
           </form>
         </CardContent>
       </Card>

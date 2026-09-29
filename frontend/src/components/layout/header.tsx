@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { ShieldCheck, User as UserIcon, LogOut, LogIn } from 'lucide-react';
 
 export function Header() {
-  const { user, isAuthenticated, isLoading, fetchCurrentUser, logout } = useAuthStore();
+  const { user, isAuthenticated, fetchCurrentUser, logout } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -55,14 +55,9 @@ export function Header() {
         ) : (
           <div className="flex items-center gap-2">
             <Link href="/auth/login">
-              <Button variant="outline" size="sm">
+              <Button variant="primary" size="sm">
                 <LogIn className="w-4 h-4 mr-1" />
                 Sign In
-              </Button>
-            </Link>
-            <Link href="/auth/register">
-              <Button variant="primary" size="sm">
-                Register
               </Button>
             </Link>
           </div>

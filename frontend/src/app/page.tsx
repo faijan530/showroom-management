@@ -53,12 +53,9 @@ export default function Home() {
           <p className="text-sm text-gray-400 max-w-lg mx-auto">
             Please sign in with your account to access your dedicated operational panel.
           </p>
-          <div className="pt-2 flex justify-center gap-4">
+          <div className="pt-2 flex justify-center">
             <Button variant="primary" onClick={() => router.push('/auth/login')}>
               Showroom Account Sign In
-            </Button>
-            <Button variant="secondary" onClick={() => router.push('/platform/login')}>
-              Superadmin Platform Portal
             </Button>
           </div>
         </div>
