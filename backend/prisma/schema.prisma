@@ -36,8 +36,9 @@ model Showroom {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  users    User[]
-  vehicles Vehicle[]
+  users      User[]
+  vehicles   Vehicle[]
+  spareParts SparePart[]
 
   @@map("showrooms")
 }
@@ -79,3 +80,32 @@ model Vehicle {
 
   @@map("vehicles")
 }
+
+enum SparePartVehicleType {
+  BIKE
+  CAR
+  BOTH
+
+  @@map("spare_part_vehicle_type")
+}
+
+model SparePart {
+  id            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  showroomId    String               @map("showroom_id") @db.Uuid
+  partName      String               @map("part_name")
+  partCode      String               @map("part_code")
+  category      String               @default("General")
+  vehicleType   SparePartVehicleType @default(BOTH) @map("vehicle_type")
+  price         Float
+  stockQuantity Int                  @default(0) @map("stock_quantity")
+  minStockAlert Int                  @default(5) @map("min_stock_alert")
+  description   String?
+  imageUrl      String?              @map("image_url")
+  createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  showroom Showroom @relation(fields: [showroomId], references: [id], onDelete: Cascade)
+
+  @@map("spare_parts")
+}
+
