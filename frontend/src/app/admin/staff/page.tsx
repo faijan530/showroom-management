@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/auth.store';
 import { PageWrapper } from '@/components/layout/page-wrapper';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/data-display/table';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +29,21 @@ interface StaffResponse {
 }
 
 export default function AdminStaffPage() {
+  const { user, isAuthenticated } = useAuthStore();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isAuthenticated && user && user.role !== 'ADMIN') {
+      if (user.role === 'INVENTORY_MANAGER') {
+        router.replace('/inventory/dashboard');
+      } else if (user.role === 'WORKER') {
+        router.replace('/worker/dashboard');
+      } else if (user.role === 'SUPERADMIN') {
+        router.replace('/platform/dashboard');
+      }
+    }
+  }, [isAuthenticated, user, router]);
+
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
 
   // Staff Form state
@@ -42,6 +59,7 @@ export default function AdminStaffPage() {
   const { data, isLoading } = useQuery<StaffResponse>({
     queryKey: ['admin-staff-list'],
     queryFn: () => apiClient<StaffResponse>('/admin/staff'),
+    enabled: !!user && user.role === 'ADMIN',
   });
 
   const staffList = data?.data?.staff || [];
@@ -77,6 +95,10 @@ export default function AdminStaffPage() {
       role,
     });
   };
+
+  if (user && user.role !== 'ADMIN') {
+    return null;
+  }
 
   return (
     <PageWrapper

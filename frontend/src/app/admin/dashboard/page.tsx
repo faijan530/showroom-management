@@ -1,14 +1,16 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/auth.store';
 import { PageWrapper } from '@/components/layout/page-wrapper';
 import { StatCard } from '@/components/data-display/stat-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import { Users, Wrench, Package, Plus, UserPlus, Store } from 'lucide-react';
+import { Users, Wrench, Package, UserPlus, Store } from 'lucide-react';
 
 interface AdminDashboardResponse {
   success: boolean;
@@ -24,13 +26,33 @@ interface AdminDashboardResponse {
 }
 
 export default function AdminDashboardPage() {
+  const { user, isAuthenticated } = useAuthStore();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isAuthenticated && user && user.role !== 'ADMIN') {
+      if (user.role === 'INVENTORY_MANAGER') {
+        router.replace('/inventory/dashboard');
+      } else if (user.role === 'WORKER') {
+        router.replace('/worker/dashboard');
+      } else if (user.role === 'SUPERADMIN') {
+        router.replace('/platform/dashboard');
+      }
+    }
+  }, [isAuthenticated, user, router]);
+
   const { data, isLoading } = useQuery<AdminDashboardResponse>({
     queryKey: ['admin-dashboard-summary'],
     queryFn: () => apiClient<AdminDashboardResponse>('/admin/dashboard'),
+    enabled: !!user && user.role === 'ADMIN',
     retry: 1,
   });
 
   const summary = data?.data?.summary;
+
+  if (user && user.role !== 'ADMIN') {
+    return null;
+  }
 
   return (
     <PageWrapper
