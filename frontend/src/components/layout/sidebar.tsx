@@ -22,6 +22,7 @@ export function Sidebar() {
         { name: 'Service Jobs', href: '/admin/services', icon: Wrench },
         { name: 'Vehicle Catalog', href: '/inventory/vehicles', icon: Bike },
         { name: 'Spare Parts Inventory', href: '/inventory/spare-parts', icon: Package },
+        { name: 'Spare Part Orders', href: '/admin/spare-parts/requests', icon: Package },
         { name: 'Stock Inquiries Queue', href: '/inventory/inquiries', icon: MessageSquare },
         { name: 'Customer Enquiries', href: '/admin/enquiries', icon: MessageSquare },
         { name: 'Staff Directory', href: '/admin/staff', icon: Users },
@@ -35,12 +36,15 @@ export function Sidebar() {
         { name: 'Inventory Dashboard', href: '/inventory/dashboard', icon: Package },
         { name: 'Vehicle Catalog', href: '/inventory/vehicles', icon: Bike },
         { name: 'Spare Parts Inventory', href: '/inventory/spare-parts', icon: Package },
+        { name: 'Spare Part Orders', href: '/admin/spare-parts/requests', icon: Package },
         { name: 'Stock Inquiries Queue', href: '/inventory/inquiries', icon: MessageSquare },
       ];
     } else if (user.role === 'USER') {
       navItems = [
         { name: 'Browse Services', href: '/customer/services', icon: Wrench },
         { name: 'My Service Requests', href: '/customer/services/requests', icon: Package },
+        { name: 'Request Spare Part', href: '/customer/spare-parts/request', icon: Package },
+        { name: 'My Part Requests', href: '/customer/spare-parts/requests', icon: Package },
         { name: 'Ask Part Availability', href: '/customer/enquiries/new', icon: MessageSquare },
         { name: 'My Enquiries', href: '/customer/enquiries', icon: MessageSquare },
         { name: 'My Garage', href: '/customer/vehicles', icon: Bike },

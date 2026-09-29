@@ -36,11 +36,12 @@ model Showroom {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  users       User[]
-  vehicles    Vehicle[]
-  spareParts  SparePart[]
-  enquiries   Enquiry[]
-  serviceJobs ServiceJob[]
+  users             User[]
+  vehicles          Vehicle[]
+  spareParts        SparePart[]
+  enquiries         Enquiry[]
+  serviceJobs       ServiceJob[]
+  sparePartRequests SparePartRequest[]
 
   @@map("showrooms")
 }
@@ -56,11 +57,13 @@ model User {
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  showroom             Showroom?         @relation(fields: [showroomId], references: [id], onDelete: Cascade)
-  enquiries            Enquiry[]
-  assignedServiceJobs  ServiceJob[]        @relation("WorkerAssignedJobs")
-  customerVehicles     CustomerVehicle[]
-  createdServiceJobs   ServiceJob[]        @relation("CustomerCreatedJobs")
+  showroom                 Showroom?          @relation(fields: [showroomId], references: [id], onDelete: Cascade)
+  enquiries                Enquiry[]
+  assignedServiceJobs      ServiceJob[]       @relation("WorkerAssignedJobs")
+  customerVehicles         CustomerVehicle[]
+  createdServiceJobs       ServiceJob[]       @relation("CustomerCreatedJobs")
+  createdSparePartRequests SparePartRequest[] @relation("CustomerCreatedPartRequests")
+  assignedPartRequests     SparePartRequest[] @relation("WorkerAssignedPartRequests")
 
   @@map("users")
 }
@@ -110,7 +113,8 @@ model SparePart {
   createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz
   updatedAt     DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  showroom Showroom @relation(fields: [showroomId], references: [id], onDelete: Cascade)
+  showroom          Showroom           @relation(fields: [showroomId], references: [id], onDelete: Cascade)
+  sparePartRequests SparePartRequest[]
 
   @@map("spare_parts")
 }
@@ -216,6 +220,44 @@ model ServiceJob {
 
   @@map("service_jobs")
 }
+
+enum SparePartRequestStatus {
+  REQUESTED
+  UNDER_REVIEW
+  ORDERED
+  IN_TRANSIT
+  RECEIVED
+  READY
+  COMPLETED
+  CANCELLED
+
+  @@map("spare_part_request_status")
+}
+
+model SparePartRequest {
+  id                String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String                 @map("user_id") @db.Uuid
+  showroomId        String                 @map("showroom_id") @db.Uuid
+  sparePartId       String?                @map("spare_part_id") @db.Uuid
+  partName          String                 @map("part_name")
+  quantity          Int                    @default(1)
+  vehicleDetails    String?                @map("vehicle_details")
+  notes             String?
+  status            SparePartRequestStatus @default(REQUESTED)
+  estimatedDelivery DateTime?              @map("estimated_delivery") @db.Timestamptz
+  responseNotes     String?                @map("response_notes")
+  assignedWorkerId  String?                @map("assigned_worker_id") @db.Uuid
+  createdAt         DateTime               @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  user           User       @relation("CustomerCreatedPartRequests", fields: [userId], references: [id], onDelete: Cascade)
+  showroom       Showroom   @relation(fields: [showroomId], references: [id], onDelete: Cascade)
+  sparePart      SparePart? @relation(fields: [sparePartId], references: [id], onDelete: SetNull)
+  assignedWorker User?      @relation("WorkerAssignedPartRequests", fields: [assignedWorkerId], references: [id], onDelete: SetNull)
+
+  @@map("spare_part_requests")
+}
+
 
 
 
