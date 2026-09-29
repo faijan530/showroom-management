@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
-import { LayoutDashboard, Users, Store, Settings, ShieldAlert, UserPlus, Home } from 'lucide-react';
+import { LayoutDashboard, Users, Store, ShieldAlert, Home, Wrench, Package } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 export function Sidebar() {
@@ -16,10 +16,18 @@ export function Sidebar() {
   ];
 
   if (isAuthenticated && user) {
-    if (user.role === 'ADMIN' || user.role === 'INVENTORY_MANAGER') {
+    if (user.role === 'ADMIN') {
       navItems = [
         { name: 'Showroom Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
         { name: 'Staff Directory', href: '/admin/staff', icon: Users },
+      ];
+    } else if (user.role === 'WORKER') {
+      navItems = [
+        { name: 'Worker Dashboard', href: '/worker/dashboard', icon: Wrench },
+      ];
+    } else if (user.role === 'INVENTORY_MANAGER') {
+      navItems = [
+        { name: 'Inventory Dashboard', href: '/inventory/dashboard', icon: Package },
       ];
     } else if (user.role === 'SUPERADMIN') {
       navItems = [
@@ -66,7 +74,7 @@ export function Sidebar() {
       <div className="p-3 rounded-xl bg-gray-900/50 border border-gray-800 text-xs text-gray-500 space-y-0.5">
         <p className="font-semibold text-gray-400">Showroom Scope</p>
         <p className="text-[11px] text-gray-500">
-          {user?.role === 'ADMIN' ? 'Showroom Operational Panel' : 'Marketplace Portal'}
+          {user?.role === 'ADMIN' ? 'Showroom Operational Panel' : user?.role === 'WORKER' ? 'Technician Task Panel' : user?.role === 'INVENTORY_MANAGER' ? 'Inventory Control' : 'Marketplace Portal'}
         </p>
       </div>
     </aside>
