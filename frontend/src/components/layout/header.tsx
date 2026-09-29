@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { HealthBadge } from '@/components/feedback/health-badge';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ShieldCheck, User as UserIcon, LogOut, LogIn } from 'lucide-react';
+import { ShieldCheck, User as UserIcon, LogOut, LogIn, UserPlus } from 'lucide-react';
 
 export function Header() {
   const { user, isAuthenticated, fetchCurrentUser, logout } = useAuthStore();
@@ -55,9 +55,15 @@ export function Header() {
         ) : (
           <div className="flex items-center gap-2">
             <Link href="/auth/login">
-              <Button variant="primary" size="sm">
+              <Button variant="secondary" size="sm">
                 <LogIn className="w-4 h-4 mr-1" />
                 Sign In
+              </Button>
+            </Link>
+            <Link href="/auth/register">
+              <Button variant="primary" size="sm">
+                <UserPlus className="w-4 h-4 mr-1" />
+                Register
               </Button>
             </Link>
           </div>
