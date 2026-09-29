@@ -39,6 +39,7 @@ model Showroom {
   users      User[]
   vehicles   Vehicle[]
   spareParts SparePart[]
+  enquiries  Enquiry[]
 
   @@map("showrooms")
 }
@@ -54,7 +55,8 @@ model User {
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  showroom Showroom? @relation(fields: [showroomId], references: [id], onDelete: Cascade)
+  showroom  Showroom? @relation(fields: [showroomId], references: [id], onDelete: Cascade)
+  enquiries Enquiry[]
 
   @@map("users")
 }
@@ -108,4 +110,43 @@ model SparePart {
 
   @@map("spare_parts")
 }
+
+enum EnquiryType {
+  GENERAL
+  VEHICLE_PURCHASE
+  SPARE_PART_PURCHASE
+  SERVICE_INQUIRY
+
+  @@map("enquiry_type")
+}
+
+enum EnquiryStatus {
+  PENDING
+  RESPONDED
+  CLOSED
+
+  @@map("enquiry_status")
+}
+
+model Enquiry {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String?       @map("user_id") @db.Uuid
+  targetShowroomId String?       @map("target_showroom_id") @db.Uuid
+  broadcastToAll   Boolean       @default(false) @map("broadcast_to_all")
+  enquiryType      EnquiryType   @default(GENERAL) @map("enquiry_type")
+  customerName     String        @map("customer_name")
+  customerPhone    String        @map("customer_phone")
+  customerEmail    String?       @map("customer_email")
+  message          String
+  status           EnquiryStatus @default(PENDING)
+  responseNotes    String?       @map("response_notes")
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  targetShowroom Showroom? @relation(fields: [targetShowroomId], references: [id], onDelete: SetNull)
+
+  @@map("enquiries")
+}
+
 
