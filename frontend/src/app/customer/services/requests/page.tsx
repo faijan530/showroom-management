@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth.store';
-import { Wrench, Eye, Bike, Car, ArrowRight, Clock, CheckCircle2 } from 'lucide-react';
+import { Wrench, Eye, Bike, Car, ArrowRight, Clock, CheckCircle2, Star } from 'lucide-react';
 
 interface CustomerServiceRequest {
   id: string;
@@ -114,12 +114,19 @@ export default function CustomerServiceRequestsHistoryPage() {
                   <TableCell className="text-xs text-gray-400 font-mono">
                     {new Date(r.created_at).toLocaleDateString('en-IN')}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="space-x-1 text-right">
                     <Link href={`/customer/services/requests/${r.id}`}>
-                      <Button variant="ghost" size="sm" className="text-blue-400 hover:text-blue-300">
-                        <Eye className="w-4 h-4 mr-1" /> Track Live
+                      <Button variant="ghost" size="sm" className="text-blue-400 hover:text-blue-300 text-xs">
+                        <Eye className="w-3.5 h-3.5 mr-1" /> Track
                       </Button>
                     </Link>
+                    {r.status === 'COMPLETED' && (
+                      <Link href={`/customer/feedback/submit/${r.id}`}>
+                        <Button variant="secondary" size="sm" className="text-xs bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30">
+                          <Star className="w-3.5 h-3.5 mr-1 text-amber-400 fill-amber-400" /> Rate
+                        </Button>
+                      </Link>
+                    )}
                   </TableCell>
                 </TableRow>
               ))

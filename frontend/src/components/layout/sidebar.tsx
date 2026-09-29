@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
-import { LayoutDashboard, Users, Store, ShieldAlert, Home, Wrench, Package, Bike, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Users, Store, ShieldAlert, Home, Wrench, Package, Bike, MessageSquare, Star } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 export function Sidebar() {
@@ -25,6 +25,7 @@ export function Sidebar() {
         { name: 'Spare Part Orders', href: '/admin/spare-parts/requests', icon: Package },
         { name: 'Stock Inquiries Queue', href: '/inventory/inquiries', icon: MessageSquare },
         { name: 'Customer Enquiries', href: '/admin/enquiries', icon: MessageSquare },
+        { name: 'Customer Reviews', href: '/admin/feedback', icon: Star },
         { name: 'Staff Directory', href: '/admin/staff', icon: Users },
       ];
     } else if (user.role === 'WORKER') {
@@ -38,6 +39,7 @@ export function Sidebar() {
         { name: 'Spare Parts Inventory', href: '/inventory/spare-parts', icon: Package },
         { name: 'Spare Part Orders', href: '/admin/spare-parts/requests', icon: Package },
         { name: 'Stock Inquiries Queue', href: '/inventory/inquiries', icon: MessageSquare },
+        { name: 'Customer Reviews', href: '/admin/feedback', icon: Star },
       ];
     } else if (user.role === 'USER') {
       navItems = [
@@ -47,6 +49,7 @@ export function Sidebar() {
         { name: 'My Part Requests', href: '/customer/spare-parts/requests', icon: Package },
         { name: 'Ask Part Availability', href: '/customer/enquiries/new', icon: MessageSquare },
         { name: 'My Enquiries', href: '/customer/enquiries', icon: MessageSquare },
+        { name: 'Customer Reviews', href: '/customer/feedback', icon: Star },
         { name: 'My Garage', href: '/customer/vehicles', icon: Bike },
       ];
     } else if (user.role === 'SUPERADMIN') {
