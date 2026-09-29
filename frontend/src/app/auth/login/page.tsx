@@ -38,11 +38,13 @@ export default function LoginPage() {
 
       switch (user.role) {
         case 'SUPERADMIN':
-          router.push('/superadmin/dashboard');
+          router.push('/platform/dashboard');
           break;
         case 'ADMIN':
-        case 'INVENTORY_MANAGER':
           router.push('/admin/dashboard');
+          break;
+        case 'INVENTORY_MANAGER':
+          router.push('/inventory/dashboard');
           break;
         case 'WORKER':
           router.push('/worker/dashboard');
