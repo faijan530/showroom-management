@@ -4,6 +4,7 @@ import { authorizeRoles } from '@/middleware/rbac.middleware';
 import { prisma } from '@/infrastructure/prisma/prisma.client';
 import { ApiResponse } from '@/shared/response/api-response';
 import { AppError } from '@/shared/errors/app.error';
+import { logAuditEntry } from '@/shared/audit/audit.service';
 
 const updateFeedbackSchema = z.object({
   status: z.enum(['PENDING', 'APPROVED', 'REJECTED']).optional(),
@@ -48,6 +49,16 @@ export async function PUT(
         respondedAt: data.admin_response ? new Date() : existing.respondedAt,
         updatedAt: new Date(),
       },
+    });
+
+    await logAuditEntry({
+      showroomId: updated.showroomId,
+      actorId: user.id,
+      actorRole: user.role,
+      action: 'FEEDBACK_MODERATED',
+      entity: 'ServiceFeedback',
+      entityId: updated.id,
+      metadata: { newStatus: updated.status, hasResponse: !!updated.adminResponse },
     });
 
     return ApiResponse.success({

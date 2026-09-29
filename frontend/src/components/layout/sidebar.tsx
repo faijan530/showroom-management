@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
-import { LayoutDashboard, Users, Store, ShieldAlert, Home, Wrench, Package, Bike, MessageSquare, Star } from 'lucide-react';
+import { LayoutDashboard, Users, Store, ShieldAlert, Home, Wrench, Package, Bike, MessageSquare, Star, FileText } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 export function Sidebar() {
@@ -26,6 +26,7 @@ export function Sidebar() {
         { name: 'Stock Inquiries Queue', href: '/inventory/inquiries', icon: MessageSquare },
         { name: 'Customer Enquiries', href: '/admin/enquiries', icon: MessageSquare },
         { name: 'Customer Reviews', href: '/admin/feedback', icon: Star },
+        { name: 'Audit Logs', href: '/admin/audit-logs', icon: FileText },
         { name: 'Staff Directory', href: '/admin/staff', icon: Users },
       ];
     } else if (user.role === 'WORKER') {
@@ -56,6 +57,7 @@ export function Sidebar() {
       navItems = [
         { name: 'Platform Dashboard', href: '/platform/dashboard', icon: ShieldAlert },
         { name: 'Showroom Management', href: '/platform/showrooms', icon: Store },
+        { name: 'Platform Audit Logs', href: '/admin/audit-logs', icon: FileText },
       ];
     }
   }

@@ -43,6 +43,8 @@ model Showroom {
   serviceJobs       ServiceJob[]
   sparePartRequests SparePartRequest[]
   serviceFeedbacks  ServiceFeedback[]
+  auditLogs         AuditLog[]
+  activityLogs      ActivityLog[]
 
   @@map("showrooms")
 }
@@ -66,6 +68,8 @@ model User {
   createdSparePartRequests SparePartRequest[] @relation("CustomerCreatedPartRequests")
   assignedPartRequests     SparePartRequest[] @relation("WorkerAssignedPartRequests")
   serviceFeedbacks         ServiceFeedback[]
+  auditLogs                AuditLog[]
+  activityLogs             ActivityLog[]
 
   @@map("users")
 }
@@ -288,6 +292,44 @@ model ServiceFeedback {
 
   @@map("service_feedback")
 }
+
+model AuditLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  showroomId String?  @map("showroom_id") @db.Uuid
+  actorId    String?  @map("actor_id") @db.Uuid
+  actorRole  String?  @map("actor_role")
+  action     String
+  entity     String
+  entityId   String?  @map("entity_id") @db.Uuid
+  metadata   Json?    @default("{}")
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  showroom Showroom? @relation(fields: [showroomId], references: [id], onDelete: SetNull)
+  actor    User?     @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([showroomId, createdAt])
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}
+
+model ActivityLog {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  showroomId    String?  @map("showroom_id") @db.Uuid
+  userId        String?  @map("user_id") @db.Uuid
+  type          String
+  description   String
+  referenceType String?  @map("reference_type")
+  referenceId   String?  @map("reference_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  showroom Showroom? @relation(fields: [showroomId], references: [id], onDelete: SetNull)
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([showroomId, createdAt])
+  @@map("activity_logs")
+}
+
 
 
 
