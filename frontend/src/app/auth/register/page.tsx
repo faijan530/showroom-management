@@ -5,10 +5,18 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
-import { UserPlus } from 'lucide-react';
+import {
+  UserPlus,
+  Phone,
+  Lock,
+  Mail,
+  User,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  ShieldCheck,
+} from 'lucide-react';
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState('');
@@ -16,6 +24,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const register = useAuthStore((state) => state.register);
@@ -54,78 +63,147 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[75vh] px-4">
-      <Card glass className="w-full max-w-md shadow-2xl border-gray-800">
-        <CardHeader className="text-center space-y-2 pb-6">
-          <div className="mx-auto w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-            <UserPlus className="w-6 h-6 text-white" />
+    <div className="relative min-h-[85vh] flex items-center justify-center py-12 px-4 sm:px-6 overflow-hidden">
+      {/* Ambient Background Glows */}
+      <div className="absolute top-1/4 right-1/2 translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-emerald-600/15 rounded-full blur-[130px] pointer-events-none animate-pulse-glow" />
+      <div className="absolute bottom-10 left-1/4 w-80 h-80 bg-blue-600/10 rounded-full blur-[90px] pointer-events-none" />
+
+      {/* Main Glass Card */}
+      <div className="relative z-10 w-full max-w-lg bg-gray-950/80 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 sm:p-10 shadow-[0_20px_70px_rgba(0,0,0,0.7)] space-y-7 animate-fade-up">
+        {/* Header Branding */}
+        <div className="text-center space-y-3">
+          <div className="inline-flex p-3 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-cyan-500 shadow-xl shadow-emerald-500/25 border border-white/20 animate-float">
+            <UserPlus className="w-7 h-7 text-white" />
           </div>
-          <CardTitle className="text-2xl font-black">Create Customer Account</CardTitle>
-          <CardDescription>
-            Join the Multi-Showroom Vehicle & Service Marketplace
-          </CardDescription>
-        </CardHeader>
 
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input
-              label="Full Name"
-              type="text"
-              placeholder="John Doe"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-            />
-
-            <Input
-              label="Phone Number"
-              type="tel"
-              placeholder="9876543210"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              helperText="10-digit mobile number used for login"
-              required
-            />
-
-            <Input
-              label="Email Address (Optional)"
-              type="email"
-              placeholder="john@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-
-            <Input
-              label="Password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-
-            <Input
-              label="Confirm Password"
-              type="password"
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-            />
-
-            <Button variant="primary" size="lg" className="w-full mt-2" isLoading={isSubmitting}>
+          <div className="space-y-1">
+            <h1 className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-emerald-100 to-teal-200 tracking-tight">
               Create Account
-            </Button>
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-400">
+              Join MotoHub marketplace for instant vehicle & service access
+            </p>
+          </div>
+        </div>
 
-            <div className="pt-4 text-center text-xs text-gray-400 border-t border-gray-800/80">
-              Already have an account?{' '}
-              <Link href="/auth/login" className="text-blue-400 font-semibold hover:underline">
-                Sign In
-              </Link>
+        {/* Register Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Full Name */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-gray-300 block">Full Name</label>
+            <div className="relative group">
+              <User className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-500 group-focus-within:text-emerald-400 transition-colors" />
+              <input
+                type="text"
+                placeholder="John Doe"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 text-xs sm:text-sm bg-gray-900/90 border border-gray-800 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-inner"
+                required
+              />
             </div>
-          </form>
-        </CardContent>
-      </Card>
+          </div>
+
+          {/* Phone Number */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-gray-300 block">Mobile Phone Number</label>
+            <div className="relative group">
+              <Phone className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-500 group-focus-within:text-emerald-400 transition-colors" />
+              <input
+                type="tel"
+                placeholder="9876543210"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                maxLength={10}
+                className="w-full pl-10 pr-4 py-3 text-xs sm:text-sm bg-gray-900/90 border border-gray-800 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-inner"
+                required
+              />
+            </div>
+            <p className="text-[11px] text-gray-500 pl-1">10-digit mobile number used for login</p>
+          </div>
+
+          {/* Email (Optional) */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-gray-300 block">Email Address (Optional)</label>
+            <div className="relative group">
+              <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-500 group-focus-within:text-emerald-400 transition-colors" />
+              <input
+                type="email"
+                placeholder="john@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 text-xs sm:text-sm bg-gray-900/90 border border-gray-800 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-inner"
+              />
+            </div>
+          </div>
+
+          {/* Passwords Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-300 block">Password</label>
+              <div className="relative group">
+                <Lock className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-500 group-focus-within:text-emerald-400 transition-colors" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-10 pr-8 py-3 text-xs sm:text-sm bg-gray-900/90 border border-gray-800 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-inner"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-300 block">Confirm Password</label>
+              <div className="relative group">
+                <Lock className="w-4 h-4 absolute left-3.5 top-3.5 text-gray-500 group-focus-within:text-emerald-400 transition-colors" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full pl-10 pr-8 py-3 text-xs sm:text-sm bg-gray-900/90 border border-gray-800 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-inner"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3.5 text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            isLoading={isSubmitting}
+            className="w-full py-3.5 mt-2 rounded-2xl font-bold bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white shadow-xl shadow-emerald-600/30 border border-emerald-400/30 transition-all text-xs sm:text-sm"
+          >
+            Create Customer Account <ArrowRight className="w-4 h-4 ml-1.5 inline" />
+          </Button>
+
+          {/* Guarantee Pill */}
+          <div className="flex items-center justify-center gap-2 pt-2 text-[11px] text-gray-400">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Instant Access & Fully Encrypted Credentials</span>
+          </div>
+
+          {/* Footer Link */}
+          <div className="pt-5 text-center text-xs text-gray-400 border-t border-white/[0.08]">
+            Already have an account?{' '}
+            <Link href="/auth/login" className="text-emerald-400 font-bold hover:text-emerald-300 transition-colors underline underline-offset-4">
+              Sign In
+            </Link>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
+

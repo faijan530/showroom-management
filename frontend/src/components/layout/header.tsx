@@ -6,13 +6,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/components/ui/toast';
 import {
   User as UserIcon,
   LogOut,
   LogIn,
   Search,
-  Moon,
   Compass,
   Menu,
   X,
@@ -24,11 +22,11 @@ import {
   Package,
 } from 'lucide-react';
 
+
 export function Header() {
   const { user, isAuthenticated, fetchCurrentUser, logout } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
-  const { toast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -47,10 +45,6 @@ export function Header() {
     if (searchQuery.trim()) {
       router.push(`/?search=${encodeURIComponent(searchQuery.trim())}`);
     }
-  };
-
-  const handleThemeToggle = () => {
-    toast('info', 'SaaS Dark Mode Active');
   };
 
   const navLinks = [
@@ -125,16 +119,9 @@ export function Header() {
           </kbd>
         </form>
 
-        {/* Right: Theme Toggle & User Auth */}
+        {/* Right: User Auth */}
         <div className="flex items-center gap-3">
-          {/* Theme Toggle Button */}
-          <button
-            onClick={handleThemeToggle}
-            title="SaaS Dark Theme"
-            className="p-2.5 rounded-xl bg-gray-900/80 border border-gray-800 text-gray-300 hover:text-white hover:border-gray-700 hover:bg-gray-800/80 transition-all shadow-sm"
-          >
-            <Moon className="w-4 h-4 text-blue-400" />
-          </button>
+
 
           {/* User Session Auth State */}
           {isAuthenticated && user ? (
