@@ -45,7 +45,7 @@ export function VehicleCard({
       : '/category_cars.jpg';
 
   return (
-    <Card glass className="flex flex-col justify-between hover:border-blue-500/50 transition-all duration-300 group overflow-hidden shadow-xl hover:shadow-blue-500/20">
+    <Card glass className="flex flex-col justify-between hover-glow transition-all duration-500 group overflow-hidden shadow-xl hover:shadow-blue-500/20">
       <div>
         {/* Card Image Header */}
         <div className="h-56 bg-gradient-to-br from-gray-900 via-gray-950 to-[#0b101c] border-b border-gray-800/80 flex items-center justify-center p-3 relative overflow-hidden">
