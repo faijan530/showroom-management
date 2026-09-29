@@ -17,6 +17,13 @@ enum UserRole {
   @@map("user_role")
 }
 
+enum VehicleType {
+  BIKE
+  CAR
+
+  @@map("vehicle_type")
+}
+
 model Showroom {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name         String
@@ -29,7 +36,8 @@ model Showroom {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  users User[]
+  users    User[]
+  vehicles Vehicle[]
 
   @@map("showrooms")
 }
@@ -48,4 +56,26 @@ model User {
   showroom Showroom? @relation(fields: [showroomId], references: [id], onDelete: Cascade)
 
   @@map("users")
+}
+
+model Vehicle {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  showroomId    String      @map("showroom_id") @db.Uuid
+  title         String
+  type          VehicleType @default(BIKE)
+  brand         String
+  model         String
+  year          Int
+  price         Float
+  color         String
+  engineCc      Int         @map("engine_cc")
+  stockQuantity Int         @default(1) @map("stock_quantity")
+  description   String?
+  imageUrl      String?     @map("image_url")
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  showroom Showroom @relation(fields: [showroomId], references: [id], onDelete: Cascade)
+
+  @@map("vehicles")
 }

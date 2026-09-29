@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
-import { LayoutDashboard, Users, Store, ShieldAlert, Home, Wrench, Package } from 'lucide-react';
+import { LayoutDashboard, Users, Store, ShieldAlert, Home, Wrench, Package, Bike } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 export function Sidebar() {
@@ -19,6 +19,7 @@ export function Sidebar() {
     if (user.role === 'ADMIN') {
       navItems = [
         { name: 'Showroom Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+        { name: 'Vehicle Catalog', href: '/inventory/vehicles', icon: Bike },
         { name: 'Staff Directory', href: '/admin/staff', icon: Users },
       ];
     } else if (user.role === 'WORKER') {
@@ -28,6 +29,7 @@ export function Sidebar() {
     } else if (user.role === 'INVENTORY_MANAGER') {
       navItems = [
         { name: 'Inventory Dashboard', href: '/inventory/dashboard', icon: Package },
+        { name: 'Vehicle Catalog', href: '/inventory/vehicles', icon: Bike },
       ];
     } else if (user.role === 'SUPERADMIN') {
       navItems = [
