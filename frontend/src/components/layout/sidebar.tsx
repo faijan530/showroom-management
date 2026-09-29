@@ -3,48 +3,71 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Store, Users, Wrench, Package, BarChart3, Settings } from 'lucide-react';
+import { useAuthStore } from '@/store/auth.store';
+import { LayoutDashboard, Users, Store, Settings, ShieldAlert, UserPlus, Home } from 'lucide-react';
 import { cn } from '@/utils/cn';
-
-const navItems = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Showrooms', href: '/showrooms', icon: Store },
-  { name: 'Users & Roles', href: '/users', icon: Users },
-  { name: 'Service Jobs', href: '/services', icon: Wrench },
-  { name: 'Inventory & Parts', href: '/inventory', icon: Package },
-  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'Settings', href: '/settings', icon: Settings },
-];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { user, isAuthenticated } = useAuthStore();
+
+  let navItems = [
+    { name: 'Home', href: '/', icon: Home },
+  ];
+
+  if (isAuthenticated && user) {
+    if (user.role === 'ADMIN' || user.role === 'INVENTORY_MANAGER') {
+      navItems = [
+        { name: 'Showroom Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+        { name: 'Staff Directory', href: '/admin/staff', icon: Users },
+      ];
+    } else if (user.role === 'SUPERADMIN') {
+      navItems = [
+        { name: 'Platform Dashboard', href: '/platform/dashboard', icon: ShieldAlert },
+        { name: 'Showroom Management', href: '/platform/showrooms', icon: Store },
+      ];
+    }
+  }
 
   return (
     <aside className="w-64 border-r border-gray-800/80 bg-gray-950/60 p-4 flex flex-col justify-between hidden md:flex min-h-[calc(100vh-65px)]">
-      <nav className="space-y-1">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all',
-                isActive
-                  ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-900/80'
-              )}
-            >
-              <Icon className={cn('w-4 h-4', isActive ? 'text-blue-400' : 'text-gray-500')} />
-              <span>{item.name}</span>
-            </Link>
-          );
-        })}
-      </nav>
-      <div className="p-3 rounded-xl bg-gray-900/50 border border-gray-800 text-xs text-gray-500">
-        <p className="font-semibold text-gray-400">Module 001 Active</p>
-        <p>Platform Foundation v1.0</p>
+      <div className="space-y-6">
+        {isAuthenticated && user && (
+          <div className="px-3 py-2 rounded-xl bg-gray-900 border border-gray-800 text-xs space-y-1">
+            <p className="text-gray-400 font-medium">Logged in as:</p>
+            <p className="font-bold text-white truncate">{user.full_name}</p>
+            <p className="text-[10px] uppercase font-mono text-blue-400">{user.role}</p>
+          </div>
+        )}
+
+        <nav className="space-y-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all',
+                  isActive
+                    ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-900/80'
+                )}
+              >
+                <Icon className={cn('w-4 h-4', isActive ? 'text-blue-400' : 'text-gray-500')} />
+                <span>{item.name}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+
+      <div className="p-3 rounded-xl bg-gray-900/50 border border-gray-800 text-xs text-gray-500 space-y-0.5">
+        <p className="font-semibold text-gray-400">Showroom Scope</p>
+        <p className="text-[11px] text-gray-500">
+          {user?.role === 'ADMIN' ? 'Showroom Operational Panel' : 'Marketplace Portal'}
+        </p>
       </div>
     </aside>
   );
