@@ -19,6 +19,7 @@ export function Sidebar() {
     if (user.role === 'ADMIN') {
       navItems = [
         { name: 'Showroom Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+        { name: 'Service Jobs', href: '/admin/services', icon: Wrench },
         { name: 'Vehicle Catalog', href: '/inventory/vehicles', icon: Bike },
         { name: 'Spare Parts Inventory', href: '/inventory/spare-parts', icon: Package },
         { name: 'Customer Enquiries', href: '/admin/enquiries', icon: MessageSquare },
@@ -31,6 +32,7 @@ export function Sidebar() {
     } else if (user.role === 'INVENTORY_MANAGER') {
       navItems = [
         { name: 'Inventory Dashboard', href: '/inventory/dashboard', icon: Package },
+        { name: 'Service Jobs', href: '/admin/services', icon: Wrench },
         { name: 'Vehicle Catalog', href: '/inventory/vehicles', icon: Bike },
         { name: 'Spare Parts Inventory', href: '/inventory/spare-parts', icon: Package },
         { name: 'Customer Enquiries', href: '/admin/enquiries', icon: MessageSquare },
