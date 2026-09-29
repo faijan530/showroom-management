@@ -1,15 +1,15 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
+import { useAuthStore } from '@/store/auth.store';
 import { PageWrapper } from '@/components/layout/page-wrapper';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Package, Store, Phone, Mail, MapPin, ArrowLeft, ShoppingBag, MessageSquare, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Package, Store, ArrowLeft, ShoppingBag, MessageSquare, ShieldCheck } from 'lucide-react';
 
 interface SparePartDetailResponse {
   success: boolean;
@@ -40,6 +40,7 @@ interface SparePartDetailResponse {
 export default function SparePartDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
   const id = params?.id as string;
 
   const { data, isLoading, isError } = useQuery<SparePartDetailResponse>({
@@ -49,6 +50,14 @@ export default function SparePartDetailPage() {
   });
 
   const part = data?.data?.spare_part;
+
+  const handleProtectedAction = (targetPath: string) => {
+    if (!isAuthenticated) {
+      router.push(`/auth/login?redirect=${encodeURIComponent(targetPath)}`);
+    } else {
+      router.push(targetPath);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -70,6 +79,9 @@ export default function SparePartDetailPage() {
       </PageWrapper>
     );
   }
+
+  const orderPath = `/customer/spare-parts/request?partId=${part.id}&showroomId=${part.showroom_id}&partName=${encodeURIComponent(part.part_name)}`;
+  const enquiryPath = `/customer/enquiries/new?targetShowroomId=${part.showroom_id}&enquiryType=SPARE_PART_PURCHASE&message=${encodeURIComponent(`Enquiry regarding availability of ${part.part_name} (${part.part_code})`)}`;
 
   return (
     <PageWrapper
@@ -173,17 +185,13 @@ export default function SparePartDetailPage() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Link href={`/customer/spare-parts/request?partId=${part.id}&showroomId=${part.showroom_id}&partName=${encodeURIComponent(part.part_name)}`}>
-                    <Button variant="primary" className="w-full">
-                      <ShoppingBag className="w-4 h-4 mr-1.5" /> Order Spare Part
-                    </Button>
-                  </Link>
+                  <Button variant="primary" onClick={() => handleProtectedAction(orderPath)} className="w-full font-bold text-xs">
+                    <ShoppingBag className="w-4 h-4 mr-1.5" /> Order Spare Part
+                  </Button>
 
-                  <Link href={`/customer/enquiries/new?targetShowroomId=${part.showroom_id}&enquiryType=SPARE_PART_PURCHASE&message=${encodeURIComponent(`Enquiry regarding availability of ${part.part_name} (${part.part_code})`)}`}>
-                    <Button variant="outline" className="w-full">
-                      <MessageSquare className="w-4 h-4 mr-1.5" /> Ask Stock Availability
-                    </Button>
-                  </Link>
+                  <Button variant="outline" onClick={() => handleProtectedAction(enquiryPath)} className="w-full font-bold text-xs">
+                    <MessageSquare className="w-4 h-4 mr-1.5" /> Ask Stock Availability
+                  </Button>
                 </div>
               </CardContent>
             </Card>

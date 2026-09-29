@@ -1,15 +1,15 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
+import { useAuthStore } from '@/store/auth.store';
 import { PageWrapper } from '@/components/layout/page-wrapper';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bike, Car, Store, Phone, Mail, MapPin, ArrowLeft, Wrench, MessageSquare, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Bike, Car, Store, Phone, Mail, MapPin, ArrowLeft, Wrench, MessageSquare, ShieldCheck } from 'lucide-react';
 
 interface VehicleDetailResponse {
   success: boolean;
@@ -44,6 +44,7 @@ interface VehicleDetailResponse {
 export default function VehicleDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { isAuthenticated } = useAuthStore();
   const id = params?.id as string;
 
   const { data, isLoading, isError } = useQuery<VehicleDetailResponse>({
@@ -53,6 +54,14 @@ export default function VehicleDetailPage() {
   });
 
   const vehicle = data?.data?.vehicle;
+
+  const handleProtectedAction = (targetPath: string) => {
+    if (!isAuthenticated) {
+      router.push(`/auth/login?redirect=${encodeURIComponent(targetPath)}`);
+    } else {
+      router.push(targetPath);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -74,6 +83,9 @@ export default function VehicleDetailPage() {
       </PageWrapper>
     );
   }
+
+  const enquiryPath = `/customer/enquiries/new?targetShowroomId=${vehicle.showroom_id}&enquiryType=VEHICLE_PURCHASE&vehicleDetails=${encodeURIComponent(`${vehicle.title} (${vehicle.brand} ${vehicle.model})`)}`;
+  const serviceBookingPath = `/customer/services/request?targetShowroomId=${vehicle.showroom_id}&vehicleType=${vehicle.type}&vehicleDetails=${encodeURIComponent(`${vehicle.brand} ${vehicle.model}`)}`;
 
   return (
     <PageWrapper
@@ -196,23 +208,15 @@ export default function VehicleDetailPage() {
                   </div>
                 </div>
 
-                {/* Direct Action Buttons */}
+                {/* Direct Protected Action Buttons */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <Link
-                    href={`/customer/enquiries/new?targetShowroomId=${vehicle.showroom_id}&enquiryType=VEHICLE_PURCHASE&vehicleDetails=${encodeURIComponent(`${vehicle.title} (${vehicle.brand} ${vehicle.model})`)}`}
-                  >
-                    <Button variant="primary" className="w-full">
-                      <MessageSquare className="w-4 h-4 mr-1.5" /> Send Purchase Enquiry
-                    </Button>
-                  </Link>
+                  <Button variant="primary" onClick={() => handleProtectedAction(enquiryPath)} className="w-full font-bold text-xs">
+                    <MessageSquare className="w-4 h-4 mr-1.5" /> Send Purchase Enquiry
+                  </Button>
 
-                  <Link
-                    href={`/customer/services/request?targetShowroomId=${vehicle.showroom_id}&vehicleType=${vehicle.type}&vehicleDetails=${encodeURIComponent(`${vehicle.brand} ${vehicle.model}`)}`}
-                  >
-                    <Button variant="outline" className="w-full">
-                      <Wrench className="w-4 h-4 mr-1.5" /> Book Service Job
-                    </Button>
-                  </Link>
+                  <Button variant="outline" onClick={() => handleProtectedAction(serviceBookingPath)} className="w-full font-bold text-xs">
+                    <Wrench className="w-4 h-4 mr-1.5" /> Book Service Job
+                  </Button>
                 </div>
               </CardContent>
             </Card>
