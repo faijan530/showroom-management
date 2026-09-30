@@ -17,10 +17,15 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/showrooms/') ||
     pathname === '/about' ||
     pathname === '/platform/login' ||
+    pathname === '/superadmin/login' ||
     pathname.startsWith('/auth/');
 
-  // 1. Guard SuperAdmin / Platform routes (/platform/*)
-  if (pathname.startsWith('/platform') && pathname !== '/platform/login') {
+  // 1. Guard SuperAdmin / Platform routes (/platform/* and /superadmin/*)
+  if (
+    (pathname.startsWith('/platform') || pathname.startsWith('/superadmin')) &&
+    pathname !== '/platform/login' &&
+    pathname !== '/superadmin/login'
+  ) {
     if (!token) {
       return NextResponse.redirect(new URL('/platform/login', request.url));
     }
