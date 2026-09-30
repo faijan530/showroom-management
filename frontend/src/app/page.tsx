@@ -182,7 +182,7 @@ export default function Home() {
         {/* ================================================== */}
         {/* 1. HERO SECTION & REDESIGNED SHOWROOM FINDER      */}
         {/* ================================================== */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
           {/* Main Hero Card (8 Cols) */}
           <div className="lg:col-span-8 rounded-3xl bg-gradient-to-br from-gray-900/90 via-gray-950 to-[#0c1220] border border-gray-800/80 p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden shadow-2xl">
@@ -190,7 +190,7 @@ export default function Home() {
             <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute bottom-0 right-0 w-80 h-80 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="space-y-6 relative z-10">
+            <div className="space-y-5 relative z-10">
               {/* Badge */}
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-semibold text-blue-400">
                 <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
@@ -244,7 +244,7 @@ export default function Home() {
               </div>
 
               {/* Trust Statistics Bar */}
-              <div className="pt-6 border-t border-gray-800/80 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+              <div className="pt-5 border-t border-gray-800/80 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
                 <div className="flex items-center gap-2.5">
                   <div className="p-2 rounded-lg bg-gray-900 border border-gray-800 text-blue-400">
                     <Store className="w-4 h-4" />
@@ -288,11 +288,11 @@ export default function Home() {
             </div>
 
             {/* Automotive Hero Visual Banner */}
-            <div className="mt-8 rounded-2xl border border-gray-800/80 bg-gray-950 overflow-hidden relative group">
+            <div className="mt-6 rounded-2xl border border-gray-800/80 bg-gray-950 overflow-hidden relative group">
               <img
                 src="/hero_showroom.jpg"
                 alt="Premium Showroom Network"
-                className="w-full h-64 sm:h-80 object-cover object-center group-hover:scale-102 transition-transform duration-700 opacity-85"
+                className="w-full h-56 sm:h-72 object-cover object-center group-hover:scale-102 transition-transform duration-700 opacity-85"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/40 to-transparent" />
 
@@ -323,138 +323,136 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right Side: Redesigned Showroom Discovery Panel (4 Cols) */}
-          <div className="lg:col-span-4 rounded-3xl bg-gradient-to-b from-gray-900/95 via-gray-900 to-gray-950 border border-gray-800/80 p-6 flex flex-col justify-between space-y-5 relative overflow-hidden shadow-2xl">
+          {/* Right Side: Content-Fit Showroom Discovery Panel (4 Cols) */}
+          <div className="lg:col-span-4 rounded-3xl bg-gradient-to-b from-gray-900/95 via-gray-900 to-gray-950 border border-gray-800/80 p-6 flex flex-col space-y-4 relative overflow-hidden shadow-2xl">
             {/* Background Glow */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
 
-            <div className="space-y-4 relative z-10">
-              {/* Header Badge & Title */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono text-blue-400 uppercase tracking-wider font-bold">
-                    LOCATION DISCOVERY
+            {/* Header Badge & Title */}
+            <div className="space-y-2 relative z-10">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-blue-400 uppercase tracking-wider font-bold">
+                  LOCATION DISCOVERY
+                </span>
+                <Badge variant="info" className="text-[10px] py-0.5 px-2">
+                  {showrooms.length > 0 ? `${showrooms.length} Showrooms` : '12+ Verified'}
+                </Badge>
+              </div>
+              <h2 className="text-xl font-bold text-white tracking-tight">
+                Find the Best Showrooms <span className="text-blue-400">Near You</span>
+              </h2>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Compare vehicles, services and genuine spare parts from verified showrooms.
+              </p>
+            </div>
+
+            {/* Location Search Bar */}
+            <div className="relative z-10">
+              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search city, area or showroom..."
+                value={showroomSearch}
+                onChange={(e) => setShowroomSearch(e.target.value)}
+                className="w-full bg-gray-950 border border-gray-800 rounded-xl pl-8 pr-3 py-2 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
+              />
+            </div>
+
+            {/* City Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-[11px] relative z-10">
+              {['All Cities', 'Bangalore', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune'].map((city) => (
+                <button
+                  key={city}
+                  onClick={() => setSelectedCity(city)}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-all whitespace-nowrap shrink-0 border ${
+                    selectedCity === city
+                      ? 'bg-blue-600 text-white border-blue-500 shadow-sm shadow-blue-500/20'
+                      : 'bg-gray-950 text-gray-400 border-gray-800 hover:text-white hover:border-gray-700'
+                  }`}
+                >
+                  {city}
+                </button>
+              ))}
+            </div>
+
+            {/* Interactive Stylized Map Visual with Live Pins */}
+            <div className="rounded-2xl border border-gray-800 bg-[#0a0f1d] p-4 relative h-56 flex flex-col justify-between overflow-hidden group z-10">
+              {/* Map Grid Pattern */}
+              <div className="absolute inset-0 opacity-25 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px]" />
+              
+              {/* Simulated Map Roads/Lines */}
+              <svg className="absolute inset-0 w-full h-full stroke-blue-500/10 fill-none" strokeWidth="1">
+                <path d="M 0,40 Q 100,80 200,30 T 400,100" />
+                <path d="M 50,200 Q 150,100 250,180 T 350,50" />
+              </svg>
+
+              {/* Map Status Header */}
+              <div className="relative z-10 flex items-center justify-between">
+                <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 text-[10px] font-mono text-blue-300 backdrop-blur-md">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  <span>Live Network Map</span>
+                </div>
+                <span className="text-[10px] text-gray-400 font-mono">India Coverage</span>
+              </div>
+
+              {/* Map Location Pins */}
+              <div className="relative z-10 flex items-center justify-around py-2">
+                <div className="flex flex-col items-center gap-1 group/pin cursor-pointer">
+                  <div className="p-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 group-hover/pin:scale-110 transition-transform shadow-lg shadow-emerald-500/20">
+                    <MapPin className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-[9px] font-mono text-gray-300 bg-gray-950/80 px-1.5 py-0.5 rounded border border-gray-800">
+                    Bangalore
                   </span>
-                  <Badge variant="info" className="text-[10px] py-0.5 px-2">
-                    {showrooms.length > 0 ? `${showrooms.length} Showrooms` : '12+ Verified'}
-                  </Badge>
-                </div>
-                <h2 className="text-xl font-bold text-white tracking-tight">
-                  Find the Best Showrooms <span className="text-blue-400">Near You</span>
-                </h2>
-                <p className="text-xs text-gray-400 leading-relaxed">
-                  Compare vehicles, services and genuine spare parts from verified showrooms.
-                </p>
-              </div>
-
-              {/* Location Search Bar */}
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search city, area or showroom..."
-                  value={showroomSearch}
-                  onChange={(e) => setShowroomSearch(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded-xl pl-8 pr-3 py-2 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
-                />
-              </div>
-
-              {/* City Filter Pills */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-[11px]">
-                {['All Cities', 'Bangalore', 'Mumbai', 'Delhi', 'Hyderabad', 'Pune'].map((city) => (
-                  <button
-                    key={city}
-                    onClick={() => setSelectedCity(city)}
-                    className={`px-2.5 py-1 rounded-lg font-medium transition-all whitespace-nowrap shrink-0 border ${
-                      selectedCity === city
-                        ? 'bg-blue-600 text-white border-blue-500 shadow-sm shadow-blue-500/20'
-                        : 'bg-gray-950 text-gray-400 border-gray-800 hover:text-white hover:border-gray-700'
-                    }`}
-                  >
-                    {city}
-                  </button>
-                ))}
-              </div>
-
-              {/* Interactive Stylized Map Visual with Live Pins */}
-              <div className="rounded-2xl border border-gray-800 bg-[#0a0f1d] p-4 relative h-56 flex flex-col justify-between overflow-hidden group">
-                {/* Map Grid Pattern */}
-                <div className="absolute inset-0 opacity-25 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px]" />
-                
-                {/* Simulated Map Roads/Lines */}
-                <svg className="absolute inset-0 w-full h-full stroke-blue-500/10 fill-none" strokeWidth="1">
-                  <path d="M 0,40 Q 100,80 200,30 T 400,100" />
-                  <path d="M 50,200 Q 150,100 250,180 T 350,50" />
-                </svg>
-
-                {/* Map Status Header */}
-                <div className="relative z-10 flex items-center justify-between">
-                  <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 text-[10px] font-mono text-blue-300 backdrop-blur-md">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                    <span>Live Network Map</span>
-                  </div>
-                  <span className="text-[10px] text-gray-400 font-mono">India Coverage</span>
                 </div>
 
-                {/* Map Location Pins */}
-                <div className="relative z-10 flex items-center justify-around py-2">
-                  <div className="flex flex-col items-center gap-1 group/pin cursor-pointer">
-                    <div className="p-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 group-hover/pin:scale-110 transition-transform shadow-lg shadow-emerald-500/20">
-                      <MapPin className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="text-[9px] font-mono text-gray-300 bg-gray-950/80 px-1.5 py-0.5 rounded border border-gray-800">
-                      Bangalore
-                    </span>
+                <div className="flex flex-col items-center gap-1 group/pin cursor-pointer">
+                  <div className="p-1.5 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-400 group-hover/pin:scale-110 transition-transform shadow-lg shadow-blue-500/20">
+                    <Store className="w-3.5 h-3.5" />
                   </div>
+                  <span className="text-[9px] font-mono text-gray-300 bg-gray-950/80 px-1.5 py-0.5 rounded border border-gray-800">
+                    Mumbai
+                  </span>
+                </div>
 
-                  <div className="flex flex-col items-center gap-1 group/pin cursor-pointer">
-                    <div className="p-1.5 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-400 group-hover/pin:scale-110 transition-transform shadow-lg shadow-blue-500/20">
+                <div className="flex flex-col items-center gap-1 group/pin cursor-pointer">
+                  <div className="p-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 group-hover/pin:scale-110 transition-transform shadow-lg shadow-amber-500/20">
+                    <MapPin className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-[9px] font-mono text-gray-300 bg-gray-950/80 px-1.5 py-0.5 rounded border border-gray-800">
+                    Delhi
+                  </span>
+                </div>
+              </div>
+
+              {/* Showroom Preview Card Overlay */}
+              <div className="relative z-10 p-3 rounded-xl bg-gray-900/95 border border-gray-800 backdrop-blur-md space-y-1.5 shadow-xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
                       <Store className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-[9px] font-mono text-gray-300 bg-gray-950/80 px-1.5 py-0.5 rounded border border-gray-800">
-                      Mumbai
-                    </span>
+                    <div className="min-w-0">
+                      <p className="font-bold text-white text-xs truncate">
+                        {topShowroom ? topShowroom.name : 'Apex Motors Hub'}
+                      </p>
+                      <p className="text-[10px] text-gray-400 truncate">
+                        {topShowroom ? topShowroom.address : 'Indiranagar, Bangalore'}
+                      </p>
+                    </div>
                   </div>
-
-                  <div className="flex flex-col items-center gap-1 group/pin cursor-pointer">
-                    <div className="p-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 group-hover/pin:scale-110 transition-transform shadow-lg shadow-amber-500/20">
-                      <MapPin className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="text-[9px] font-mono text-gray-300 bg-gray-950/80 px-1.5 py-0.5 rounded border border-gray-800">
-                      Delhi
+                  <div className="text-right text-[10px] shrink-0">
+                    <span className="font-bold text-amber-400 flex items-center justify-end gap-0.5">
+                      <Star className="w-3 h-3 fill-amber-400" /> 4.9
                     </span>
-                  </div>
-                </div>
-
-                {/* Showroom Preview Card Overlay */}
-                <div className="relative z-10 p-3 rounded-xl bg-gray-900/95 border border-gray-800 backdrop-blur-md space-y-1.5 shadow-xl">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
-                        <Store className="w-3.5 h-3.5" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-bold text-white text-xs truncate">
-                          {topShowroom ? topShowroom.name : 'Apex Motors Hub'}
-                        </p>
-                        <p className="text-[10px] text-gray-400 truncate">
-                          {topShowroom ? topShowroom.address : 'Indiranagar, Bangalore'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right text-[10px] shrink-0">
-                      <span className="font-bold text-amber-400 flex items-center justify-end gap-0.5">
-                        <Star className="w-3 h-3 fill-amber-400" /> 4.9
-                      </span>
-                      <span className="text-emerald-400 font-medium block">Verified</span>
-                    </div>
+                    <span className="text-emerald-400 font-medium block">Verified</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Clear Primary CTA */}
-            <div className="pt-2 relative z-10">
+            <div className="pt-1 relative z-10">
               <Button
                 variant="primary"
                 size="md"
