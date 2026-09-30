@@ -30,9 +30,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Public Layout: Top Navbar + Main Content + Footer (NO Sidebar)
   if (isPublicRoute) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#070a12] text-gray-100">
+      <div className="min-h-screen flex flex-col bg-[#070a12] text-gray-100 overflow-x-hidden w-full max-w-full">
         <Header />
-        <main className="flex-1 w-full">{children}</main>
+        <main className="flex-1 w-full overflow-x-hidden">{children}</main>
         <Footer />
       </div>
     );
@@ -40,11 +40,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   // Authenticated Dashboard Shell Layout: Top Navbar + App Sidebar + Container Main + Footer
   return (
-    <div className="min-h-screen flex flex-col bg-gray-950 text-gray-100">
+    <div className="min-h-screen flex flex-col bg-gray-950 text-gray-100 overflow-x-hidden w-full max-w-full">
       <Header />
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-x-hidden">
         <Sidebar />
-        <main className="flex-1 p-6 max-w-[1440px] 2xl:max-w-[1536px] mx-auto w-full">{children}</main>
+        <main className="flex-1 p-6 max-w-[1440px] 2xl:max-w-[1536px] mx-auto w-full overflow-x-hidden">{children}</main>
       </div>
       <Footer />
     </div>
