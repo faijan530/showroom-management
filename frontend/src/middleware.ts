@@ -4,6 +4,21 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('access_token')?.value;
   const { pathname } = request.nextUrl;
 
+  // Detect if current host or env is designated for Superadmin portal
+  const host = request.headers.get('host') || '';
+  const isSuperadminApp =
+    host.toLowerCase().includes('superadmin') ||
+    process.env.NEXT_PUBLIC_APP_TYPE === 'superadmin' ||
+    process.env.NEXT_PUBLIC_IS_SUPERADMIN === 'true';
+
+  // 1. If this is the Superadmin portal deployment, handle root '/' and '/superadmin' redirects
+  if (isSuperadminApp) {
+    if (pathname === '/' || pathname === '/superadmin') {
+      const destination = token ? '/platform/dashboard' : '/platform/login';
+      return NextResponse.redirect(new URL(destination, request.url));
+    }
+  }
+
   // Define Public Discovery Routes where browsing is 100% public (No login required)
   const isPublicDiscovery =
     pathname === '/' ||
@@ -20,7 +35,7 @@ export function middleware(request: NextRequest) {
     pathname === '/superadmin/login' ||
     pathname.startsWith('/auth/');
 
-  // 1. Guard SuperAdmin / Platform routes (/platform/* and /superadmin/*)
+  // 2. Guard SuperAdmin / Platform routes (/platform/* and /superadmin/*)
   if (
     (pathname.startsWith('/platform') || pathname.startsWith('/superadmin')) &&
     pathname !== '/platform/login' &&
@@ -31,7 +46,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // 2. Guard Authenticated Application & Personal Workflow routes
+  // 3. Guard Authenticated Application & Personal Workflow routes
   // Protected paths: /admin/*, /worker/*, /inventory/*, and /customer/* (except /customer/services)
   const isProtectedAppRoute =
     pathname.startsWith('/admin') ||
@@ -45,7 +60,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 3. If token exists and visiting /auth/* pages, redirect to main landing
+  // 4. If token exists and visiting /auth/* pages, redirect to main landing
   if (token && pathname.startsWith('/auth/')) {
     return NextResponse.redirect(new URL('/', request.url));
   }
