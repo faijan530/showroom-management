@@ -60,7 +60,7 @@ export function Header() {
       {/* Top subtle glow line */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-4">
+      <div className="max-w-[1440px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 md:px-8 lg:px-10 py-3.5 flex items-center justify-between gap-4">
         {/* Left: Product Logo & Brand Mark */}
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-3 group">

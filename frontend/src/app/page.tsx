@@ -177,7 +177,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#070a12] text-gray-100 selection:bg-blue-600 selection:text-white pb-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-16 sm:space-y-24">
+      <div className="max-w-[1440px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 md:px-8 lg:px-10 pt-6 space-y-16 sm:space-y-24">
         
         {/* ================================================== */}
         {/* 1. HERO SECTION & REDESIGNED SHOWROOM FINDER      */}

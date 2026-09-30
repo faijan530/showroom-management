@@ -44,7 +44,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Header />
       <div className="flex flex-1">
         <Sidebar />
-        <main className="flex-1 p-6 max-w-7xl mx-auto w-full">{children}</main>
+        <main className="flex-1 p-6 max-w-[1440px] 2xl:max-w-[1536px] mx-auto w-full">{children}</main>
       </div>
       <Footer />
     </div>

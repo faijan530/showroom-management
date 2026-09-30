@@ -22,7 +22,7 @@ export function Footer() {
       {/* Top Ambient Glow Line */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-8 relative z-10 space-y-12">
+      <div className="max-w-[1440px] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 md:px-8 lg:px-10 pt-14 pb-8 relative z-10 space-y-12">
         {/* Top Feature Banner inside Footer */}
         <div className="rounded-2xl bg-gradient-to-r from-blue-900/30 via-indigo-900/20 to-gray-900/40 border border-blue-500/20 p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl backdrop-blur-md">
           <div className="space-y-1.5 text-center md:text-left">
