@@ -71,7 +71,7 @@ export function Header() {
             <div className="flex flex-col">
               <span className="text-xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-indigo-200 flex items-center gap-2">
                 MotoHub
-                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest text-blue-400 bg-blue-500/10 border border-blue-500/30 px-2 py-0.5 rounded-full shadow-inner">
+                <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest text-blue-400 bg-blue-500/10 border border-blue-500/30 px-2 py-0.5 rounded-full shadow-inner">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   SaaS
                 </span>
@@ -90,11 +90,10 @@ export function Header() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-3.5 py-2 rounded-xl transition-all duration-200 flex items-center gap-2 border ${
-                    isActive
+                  className={`px-3.5 py-2 rounded-xl transition-all duration-200 flex items-center gap-2 border ${isActive
                       ? 'bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border-blue-500/40 text-white font-bold shadow-md shadow-blue-500/10'
                       : 'border-transparent text-gray-300 hover:text-white hover:bg-white/[0.05] hover:border-white/10'
-                  }`}
+                    }`}
                 >
                   <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-blue-400' : 'text-gray-400'}`} />
                   <span>{link.name}</span>
@@ -120,7 +119,8 @@ export function Header() {
         </form>
 
         {/* Right: User Auth */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-3">
+
 
           {/* User Session Auth State */}
           {isAuthenticated && user ? (
@@ -130,22 +130,22 @@ export function Header() {
                   user.role === 'ADMIN'
                     ? '/admin/dashboard'
                     : user.role === 'WORKER'
-                    ? '/worker/dashboard'
-                    : user.role === 'INVENTORY_MANAGER'
-                    ? '/inventory/dashboard'
-                    : user.role === 'SUPERADMIN'
-                    ? '/platform/dashboard'
-                    : '/customer/dashboard'
+                      ? '/worker/dashboard'
+                      : user.role === 'INVENTORY_MANAGER'
+                        ? '/inventory/dashboard'
+                        : user.role === 'SUPERADMIN'
+                          ? '/platform/dashboard'
+                          : '/customer/dashboard'
                 }
               >
-                <div className="flex items-center gap-2 px-3 sm:px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-gray-900 to-gray-950 border border-gray-800 text-xs text-gray-200 hover:border-blue-500/40 transition-all shadow-md group">
+                <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-gray-900 to-gray-950 border border-gray-800 text-xs text-gray-200 hover:border-blue-500/40 transition-all shadow-md group">
                   <div className="p-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 group-hover:scale-105 transition-transform">
                     <UserIcon className="w-3.5 h-3.5" />
                   </div>
-                  <span className="font-bold text-white max-w-[80px] sm:max-w-[130px] truncate">
+                  <span className="font-bold text-white max-w-[100px] sm:max-w-[130px] truncate">
                     {user.full_name}
                   </span>
-                  <Badge variant="neutral" className="hidden sm:inline-flex text-[10px] py-0 px-1.5 bg-blue-500/10 text-blue-300 border-blue-500/20">
+                  <Badge variant="neutral" className="text-[10px] py-0 px-1.5 bg-blue-500/10 text-blue-300 border-blue-500/20">
                     {user.role}
                   </Badge>
                 </div>
@@ -164,12 +164,11 @@ export function Header() {
           ) : (
             <div className="flex items-center gap-2">
               <Link href="/auth/login">
-                <Button variant="secondary" size="sm" className="text-xs bg-gray-900/90 border-gray-800 hover:bg-gray-800 text-gray-200 rounded-xl px-3 sm:px-3.5">
-                  <LogIn className="w-3.5 h-3.5 sm:mr-1.5 text-gray-400" />
-                  <span className="hidden sm:inline">Sign In</span>
+                <Button variant="secondary" size="sm" className="text-xs bg-gray-900/90 border-gray-800 hover:bg-gray-800 text-gray-200 rounded-xl px-3.5">
+                  <LogIn className="w-3.5 h-3.5 mr-1.5 text-gray-400" /> Sign In
                 </Button>
               </Link>
-              <Link href="/auth/register" className="hidden sm:block">
+              <Link href="/auth/register">
                 <Button variant="primary" size="sm" className="text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg shadow-blue-600/30 px-4 rounded-xl border border-blue-400/30 transition-all">
                   <Sparkles className="w-3.5 h-3.5 mr-1" /> Get Started
                 </Button>
@@ -181,7 +180,6 @@ export function Header() {
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="lg:hidden p-2.5 rounded-xl bg-gray-900/90 border border-gray-800 text-gray-400 hover:text-white"
-            aria-label="Toggle navigation menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -190,7 +188,7 @@ export function Header() {
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden pt-3 pb-5 px-4 border-t border-gray-800/80 bg-gray-950/95 backdrop-blur-xl space-y-4 animate-fade-up">
+        <div className="lg:hidden pt-3 pb-4 px-4 border-t border-gray-800/80 bg-gray-950/95 backdrop-blur-xl mt-2 space-y-3 animate-fade-up">
           <form onSubmit={handleSearchSubmit} className="relative">
             <Search className="w-4 h-4 absolute left-3.5 top-2.5 text-gray-400" />
             <input
@@ -201,22 +199,6 @@ export function Header() {
               className="w-full pl-10 pr-4 py-2 text-xs bg-gray-900 border border-gray-800 rounded-xl text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500"
             />
           </form>
-
-          {!isAuthenticated && (
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              <Link href="/auth/login" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="secondary" size="sm" className="w-full text-xs bg-gray-900 border-gray-800 text-gray-200 rounded-xl py-2.5">
-                  <LogIn className="w-3.5 h-3.5 mr-1.5 text-blue-400" /> Sign In
-                </Button>
-              </Link>
-              <Link href="/auth/register" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="primary" size="sm" className="w-full text-xs font-bold bg-blue-600 text-white rounded-xl py-2.5">
-                  <Sparkles className="w-3.5 h-3.5 mr-1" /> Get Started
-                </Button>
-              </Link>
-            </div>
-          )}
-
           <nav className="grid grid-cols-2 gap-2 text-xs font-semibold text-gray-300">
             {navLinks.map((link) => {
               const Icon = link.icon;
@@ -228,11 +210,10 @@ export function Header() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${
-                    isActive
+                  className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${isActive
                       ? 'bg-blue-600/20 border-blue-500/40 text-blue-300 font-bold'
                       : 'bg-gray-900/80 border-gray-800 hover:border-blue-500/40 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <Icon className="w-4 h-4 text-blue-400" />
                   <span>{link.name}</span>
