@@ -17,40 +17,23 @@ async function main() {
 
   const passwordHash = await bcrypt.hash(password, 10);
 
-  // Find existing SUPERADMIN user if present, to allow updating phone/password seamlessly from .env
-  const existingSuperadmin = await prisma.user.findFirst({
-    where: { role: UserRole.SUPERADMIN },
+  // Upsert superadmin based on unique phone number to guarantee idempotency and avoid P2002 unique constraint conflicts
+  const superadmin = await prisma.user.upsert({
+    where: { phone },
+    update: {
+      fullName,
+      email,
+      passwordHash,
+      role: UserRole.SUPERADMIN,
+    },
+    create: {
+      phone,
+      fullName,
+      email,
+      passwordHash,
+      role: UserRole.SUPERADMIN,
+    },
   });
-
-  let superadmin;
-  if (existingSuperadmin) {
-    superadmin = await prisma.user.update({
-      where: { id: existingSuperadmin.id },
-      data: {
-        phone,
-        fullName,
-        email,
-        passwordHash,
-      },
-    });
-  } else {
-    superadmin = await prisma.user.upsert({
-      where: { phone },
-      update: {
-        fullName,
-        email,
-        passwordHash,
-        role: UserRole.SUPERADMIN,
-      },
-      create: {
-        phone,
-        fullName,
-        email,
-        passwordHash,
-        role: UserRole.SUPERADMIN,
-      },
-    });
-  }
 
   console.log('Superadmin user seeded/updated successfully from environment variables:');
   console.log(`- ID: ${superadmin.id}`);
