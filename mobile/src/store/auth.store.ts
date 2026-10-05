@@ -9,6 +9,14 @@ export interface User {
   email?: string | null;
   role: 'SUPERADMIN' | 'ADMIN' | 'WORKER' | 'INVENTORY_MANAGER' | 'USER';
   showroom_id: string | null;
+  showroom_name?: string | null;
+  showroom_code?: string | null;
+  showroom?: {
+    id: string;
+    name: string;
+    code: string;
+    address?: string;
+  } | null;
 }
 
 interface AuthState {

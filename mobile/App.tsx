@@ -5,6 +5,13 @@ import { useAuthStore } from './src/store/auth.store';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
 import { DashboardScreen } from './src/screens/DashboardScreen';
+import { SuperAdminDashboardScreen } from './src/screens/SuperAdminDashboardScreen';
+import { AdminDashboardScreen } from './src/screens/AdminDashboardScreen';
+import { WorkerDashboardScreen } from './src/screens/WorkerDashboardScreen';
+import { InventoryManagerDashboardScreen } from './src/screens/InventoryManagerDashboardScreen';
+import { VehiclesScreen } from './src/screens/VehiclesScreen';
+import { VehicleDetailScreen } from './src/screens/VehicleDetailScreen';
+import { Vehicle } from './src/types/vehicle';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -15,9 +22,15 @@ const queryClient = new QueryClient({
   },
 });
 
+type AuthScreen = 'login' | 'register';
+type AppScreen = 'dashboard' | 'vehicles' | 'vehicle_detail';
+
 function AppContent() {
-  const [currentScreen, setCurrentScreen] = useState<'login' | 'register'>('login');
-  const { isAuthenticated, isLoading, checkAuthSession } = useAuthStore();
+  const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
+  const [appScreen, setAppScreen] = useState<AppScreen>('dashboard');
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+
+  const { user, isAuthenticated, isLoading, checkAuthSession } = useAuthStore();
 
   useEffect(() => {
     checkAuthSession();
@@ -33,14 +46,106 @@ function AppContent() {
   }
 
   if (isAuthenticated) {
-    return <DashboardScreen />;
+    // 1. SUPERADMIN Role Portal
+    if (user?.role === 'SUPERADMIN') {
+      return <SuperAdminDashboardScreen />;
+    }
+
+    // 2. ADMIN Role Portal (Showroom Owner / Manager)
+    if (user?.role === 'ADMIN') {
+      if (appScreen === 'vehicles') {
+        return (
+          <VehiclesScreen
+            onSelectVehicle={(vehicle) => {
+              setSelectedVehicle(vehicle);
+              setAppScreen('vehicle_detail');
+            }}
+            onBack={() => setAppScreen('dashboard')}
+          />
+        );
+      }
+      if (appScreen === 'vehicle_detail' && selectedVehicle) {
+        return (
+          <VehicleDetailScreen
+            vehicle={selectedVehicle}
+            onBack={() => setAppScreen('vehicles')}
+          />
+        );
+      }
+      return (
+        <AdminDashboardScreen
+          onNavigateToVehicles={() => setAppScreen('vehicles')}
+        />
+      );
+    }
+
+    // 3. WORKER Role Portal (Technician / Mechanic)
+    if (user?.role === 'WORKER') {
+      return <WorkerDashboardScreen />;
+    }
+
+    // 4. INVENTORY_MANAGER Role Portal
+    if (user?.role === 'INVENTORY_MANAGER') {
+      if (appScreen === 'vehicles') {
+        return (
+          <VehiclesScreen
+            onSelectVehicle={(vehicle) => {
+              setSelectedVehicle(vehicle);
+              setAppScreen('vehicle_detail');
+            }}
+            onBack={() => setAppScreen('dashboard')}
+          />
+        );
+      }
+      if (appScreen === 'vehicle_detail' && selectedVehicle) {
+        return (
+          <VehicleDetailScreen
+            vehicle={selectedVehicle}
+            onBack={() => setAppScreen('vehicles')}
+          />
+        );
+      }
+      return (
+        <InventoryManagerDashboardScreen
+          onNavigateToVehicles={() => setAppScreen('vehicles')}
+        />
+      );
+    }
+
+    // 5. USER / CUSTOMER Role Portal (Public User)
+    if (appScreen === 'vehicles') {
+      return (
+        <VehiclesScreen
+          onSelectVehicle={(vehicle) => {
+            setSelectedVehicle(vehicle);
+            setAppScreen('vehicle_detail');
+          }}
+          onBack={() => setAppScreen('dashboard')}
+        />
+      );
+    }
+
+    if (appScreen === 'vehicle_detail' && selectedVehicle) {
+      return (
+        <VehicleDetailScreen
+          vehicle={selectedVehicle}
+          onBack={() => setAppScreen('vehicles')}
+        />
+      );
+    }
+
+    return (
+      <DashboardScreen
+        onNavigateToVehicles={() => setAppScreen('vehicles')}
+      />
+    );
   }
 
-  if (currentScreen === 'register') {
-    return <RegisterScreen onNavigateToLogin={() => setCurrentScreen('login')} />;
+  if (authScreen === 'register') {
+    return <RegisterScreen onNavigateToLogin={() => setAuthScreen('login')} />;
   }
 
-  return <LoginScreen onNavigateToRegister={() => setCurrentScreen('register')} />;
+  return <LoginScreen onNavigateToRegister={() => setAuthScreen('register')} />;
 }
 
 export default function App() {

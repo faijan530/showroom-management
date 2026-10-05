@@ -1,10 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeScreen } from '../components/ui/SafeScreen';
 import { Button } from '../components/ui/Button';
 import { useAuthStore } from '../store/auth.store';
 
-export const DashboardScreen: React.FC = () => {
+interface DashboardScreenProps {
+  onNavigateToVehicles?: () => void;
+}
+
+export const DashboardScreen: React.FC<DashboardScreenProps> = ({
+  onNavigateToVehicles,
+}) => {
   const { user, logout } = useAuthStore();
 
   const getRoleBadgeColor = (role?: string) => {
@@ -34,12 +40,13 @@ export const DashboardScreen: React.FC = () => {
               { backgroundColor: getRoleBadgeColor(user?.role) },
             ]}
           >
-            <Text style={styles.roleText}>{user?.role || 'USER'} SCOPE</Text>
+            <Text style={styles.roleText}>{user?.role || 'USER'} MEMBER</Text>
           </View>
         </View>
 
+        {/* Account Overview */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Mobile Session Active</Text>
+          <Text style={styles.cardTitle}>Account Overview</Text>
           <Text style={styles.cardDesc}>
             Connected securely to MotoHub Platform API.
           </Text>
@@ -55,20 +62,20 @@ export const DashboardScreen: React.FC = () => {
               <Text style={styles.infoValue}>{user.email}</Text>
             </View>
           ) : null}
-
-          {user?.showroom_id ? (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Showroom ID:</Text>
-              <Text style={styles.infoValue}>{user.showroom_id}</Text>
-            </View>
-          ) : null}
         </View>
 
+        {/* Quick Services Navigation Banner */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Phase 1 — Auth & Storage Complete</Text>
+          <Text style={styles.cardTitle}>Vehicle Marketplace (Module 2)</Text>
           <Text style={styles.cardDesc}>
-            JWT token is encrypted and securely stored in device SecureStore.
+            Explore bikes & cars, specs, ex-showroom pricing, and stock status across dealership networks.
           </Text>
+
+          <Button
+            title="🏍️ Browse Vehicle Marketplace"
+            onPress={onNavigateToVehicles || (() => {})}
+            style={styles.marketplaceBtn}
+          />
         </View>
 
         <Button
@@ -132,7 +139,7 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     fontSize: 13,
     lineHeight: 18,
-    marginBottom: 12,
+    marginBottom: 14,
   },
   infoRow: {
     flexDirection: 'row',
@@ -149,6 +156,9 @@ const styles = StyleSheet.create({
     color: '#e2e8f0',
     fontSize: 13,
     fontWeight: '600',
+  },
+  marketplaceBtn: {
+    marginTop: 4,
   },
   logoutBtn: {
     marginTop: 10,
