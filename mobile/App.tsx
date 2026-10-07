@@ -13,6 +13,7 @@ import { VehiclesScreen } from './src/screens/VehiclesScreen';
 import { VehicleDetailScreen } from './src/screens/VehicleDetailScreen';
 import { SparePartsScreen } from './src/screens/SparePartsScreen';
 import { SparePartDetailScreen } from './src/screens/SparePartDetailScreen';
+import { CustomerGarageScreen } from './src/screens/CustomerGarageScreen';
 import { Vehicle } from './src/types/vehicle';
 import { SparePart } from './src/types/spare-part';
 
@@ -31,13 +32,15 @@ type AppScreen =
   | 'vehicles'
   | 'vehicle_detail'
   | 'spare_parts'
-  | 'spare_part_detail';
+  | 'spare_part_detail'
+  | 'garage';
 
 function AppContent() {
   const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
   const [appScreen, setAppScreen] = useState<AppScreen>('dashboard');
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [selectedPart, setSelectedPart] = useState<SparePart | null>(null);
+  const [prefilledServiceVehicle, setPrefilledServiceVehicle] = useState<{ details: string; type: 'BIKE' | 'CAR' } | null>(null);
 
   const { user, isAuthenticated, isLoading, checkAuthSession } = useAuthStore();
 
@@ -58,6 +61,19 @@ function AppContent() {
     // 1. SUPERADMIN Role Portal
     if (user?.role === 'SUPERADMIN') {
       return <SuperAdminDashboardScreen />;
+    }
+
+    // Customer Garage Screen
+    if (appScreen === 'garage') {
+      return (
+        <CustomerGarageScreen
+          onBack={() => setAppScreen('dashboard')}
+          onBookServiceForVehicle={(details, type) => {
+            setPrefilledServiceVehicle({ details, type });
+            setAppScreen('dashboard');
+          }}
+        />
+      );
     }
 
     // Common screen renders (Vehicles & Spare Parts)
@@ -133,6 +149,9 @@ function AppContent() {
       <DashboardScreen
         onNavigateToVehicles={() => setAppScreen('vehicles')}
         onNavigateToSpareParts={() => setAppScreen('spare_parts')}
+        onNavigateToGarage={() => setAppScreen('garage')}
+        initialServiceVehicle={prefilledServiceVehicle}
+        onClearPrefilledServiceVehicle={() => setPrefilledServiceVehicle(null)}
       />
     );
   }

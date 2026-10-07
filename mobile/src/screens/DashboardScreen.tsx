@@ -10,11 +10,17 @@ import { getServiceJobs, createServiceJob, ServiceJobItem } from '../lib/service
 interface DashboardScreenProps {
   onNavigateToVehicles?: () => void;
   onNavigateToSpareParts?: () => void;
+  onNavigateToGarage?: () => void;
+  initialServiceVehicle?: { details: string; type: 'BIKE' | 'CAR' } | null;
+  onClearPrefilledServiceVehicle?: () => void;
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onNavigateToVehicles,
   onNavigateToSpareParts,
+  onNavigateToGarage,
+  initialServiceVehicle,
+  onClearPrefilledServiceVehicle,
 }) => {
   const { user, logout } = useAuthStore();
   const [enquiries, setEnquiries] = useState<EnquiryItem[]>([]);
@@ -27,6 +33,17 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [vehicleDetails, setVehicleDetails] = useState('');
   const [serviceDesc, setServiceDesc] = useState('');
   const [isSubmittingService, setIsSubmittingService] = useState(false);
+
+  useEffect(() => {
+    if (initialServiceVehicle) {
+      setVehicleType(initialServiceVehicle.type);
+      setVehicleDetails(initialServiceVehicle.details);
+      setShowServiceModal(true);
+      if (onClearPrefilledServiceVehicle) {
+        onClearPrefilledServiceVehicle();
+      }
+    }
+  }, [initialServiceVehicle]);
 
   const fetchCustomerData = async () => {
     try {
@@ -286,6 +303,20 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             </View>
           </View>
         </Modal>
+
+        {/* Module: Personal Garage & Service History */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Personal Garage & Service History</Text>
+          <Text style={styles.cardDesc}>
+            Register your bikes & cars, manage registration numbers, and view digital service logs.
+          </Text>
+
+          <Button
+            title="🏎️ Manage My Garage & Digital Service Log"
+            onPress={onNavigateToGarage || (() => {})}
+            style={styles.marketplaceBtn}
+          />
+        </View>
 
         {/* Module 2: Vehicle Marketplace */}
         <View style={styles.card}>
