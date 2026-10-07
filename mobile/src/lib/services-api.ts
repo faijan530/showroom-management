@@ -67,6 +67,7 @@ export async function updateServiceJob(
 
 export interface CustomerServiceRequestInput {
   target_showroom_id: string;
+  customer_vehicle_id?: string;
   vehicle_type?: 'BIKE' | 'CAR';
   vehicle_details: string;
   service_description: string;

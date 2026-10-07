@@ -26,6 +26,7 @@ import { CustomerServiceTrackerScreen } from './CustomerServiceTrackerScreen';
 import { VehiclesScreen } from './VehiclesScreen';
 import { SparePartsScreen } from './SparePartsScreen';
 import { AdminProfileScreen } from './AdminProfileScreen';
+import { getCustomerGarageVehicles, CustomerVehicleItem } from '../lib/customer-garage-api';
 
 interface DashboardScreenProps {
   onNavigateToVehicles?: () => void;
@@ -47,11 +48,14 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [serviceJobs, setServiceJobs] = useState<ServiceJobItem[]>([]);
   const [showrooms, setShowrooms] = useState<Showroom[]>([]);
   const [packages, setPackages] = useState<ServicePackage[]>([]);
+  const [savedVehicles, setSavedVehicles] = useState<CustomerVehicleItem[]>([]);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>('');
   const [selectedPackage, setSelectedPackage] = useState<ServicePackage | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Service Booking Modal state
+  // Service Booking Modal / Wizard state
   const [showServiceModal, setShowServiceModal] = useState(false);
+  const [bookingStep, setBookingStep] = useState<number>(1);
   const [vehicleType, setVehicleType] = useState<'BIKE' | 'CAR'>('BIKE');
   const [vehicleDetails, setVehicleDetails] = useState('');
   const [serviceDesc, setServiceDesc] = useState('');
@@ -71,6 +75,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     if (initialServiceVehicle) {
       setVehicleType(initialServiceVehicle.type);
       setVehicleDetails(initialServiceVehicle.details);
+      setBookingStep(1);
       setShowServiceModal(true);
       if (onClearPrefilledServiceVehicle) {
         onClearPrefilledServiceVehicle();
@@ -80,16 +85,18 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
   const fetchCustomerData = async () => {
     try {
-      const [enquiryData, jobsData, showroomsData, catalogData] = await Promise.all([
+      const [enquiryData, jobsData, showroomsData, catalogData, vehiclesData] = await Promise.all([
         getCustomerEnquiries().catch(() => []),
         getCustomerServiceRequests().catch(() => getServiceJobs().catch(() => [])),
         getPublicShowrooms().catch(() => []),
         getCustomerServiceCatalog().catch(() => []),
+        getCustomerGarageVehicles().catch(() => []),
       ]);
       setEnquiries(enquiryData);
       setServiceJobs(jobsData);
       setShowrooms(showroomsData);
       setPackages(catalogData);
+      setSavedVehicles(vehiclesData);
       if (showroomsData.length > 0 && !selectedShowroomId) {
         setSelectedShowroomId(showroomsData[0].id);
       }
@@ -98,6 +105,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       setServiceJobs([]);
       setShowrooms([]);
       setPackages([]);
+      setSavedVehicles([]);
     } finally {
       setLoading(false);
     }
@@ -138,6 +146,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       if (targetShowroomId) {
         await createCustomerServiceRequest({
           target_showroom_id: targetShowroomId,
+          customer_vehicle_id: selectedVehicleId || undefined,
           vehicle_type: vehicleType,
           vehicle_details: vehicleDetails.trim(),
           service_description: serviceDesc.trim(),
@@ -159,6 +168,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         `Your service booking for ${vehicleDetails} is scheduled for ${preferredDate} at ${finalTimeSlot}. Track live workshop progress online!`
       );
       setShowServiceModal(false);
+      setBookingStep(1);
+      setSelectedVehicleId('');
       setVehicleDetails('');
       setServiceDesc('');
       setSelectedPackage(null);
@@ -192,7 +203,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             onSelectPackage={(pkg) => {
               setSelectedPackage(pkg);
               setVehicleType(pkg.vehicle_type === 'CAR' ? 'CAR' : 'BIKE');
-              setServiceDesc(`Booking Package: ${pkg.title} (Est. Duration: ${pkg.duration})`);
+              setServiceDesc(`Booking Package: ${pkg.title} (Duration: ${pkg.duration})`);
+              setBookingStep(1);
               setShowServiceModal(true);
               setCurrentRoute('dashboard');
             }}
@@ -205,6 +217,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             onBookServiceForVehicle={(details, type) => {
               setVehicleType(type);
               setVehicleDetails(details);
+              setBookingStep(1);
               setShowServiceModal(true);
               setCurrentRoute('dashboard');
             }}
@@ -502,382 +515,575 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         onLogout={logout}
       />
 
-      {/* Modal: Book Service Appointment */}
+      {/* Modal: Book Service Appointment (4-Step Wizard Matching Web) */}
       <Modal visible={showServiceModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { maxHeight: '90%' }]}>
+          <View style={[styles.modalContent, { maxHeight: '92%' }]}>
             <View style={styles.modalHeaderRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.modalTitle}>Book Service Appointment</Text>
+                <Text style={styles.modalTitle}>Book a Vehicle Service Appointment</Text>
                 <Text style={styles.modalSubtitle}>
-                  Schedule certified bike or car servicing with live repair tracking.
+                  Follow our simple multi-step wizard to choose your vehicle, service needs, and preferred time slot.
                 </Text>
               </View>
               <TouchableOpacity
-                onPress={() => setShowServiceModal(false)}
+                onPress={() => {
+                  setShowServiceModal(false);
+                  setBookingStep(1);
+                  setSelectedPackage(null);
+                }}
                 style={{ padding: 4 }}
               >
                 <Ionicons name="close" size={22} color="#94a3b8" />
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={{ marginVertical: 6 }}>
-              {/* Showroom Outlet Selector */}
-              {showrooms.length > 0 ? (
-                <View style={{ marginBottom: 12 }}>
-                  <Text style={styles.fieldSectionLabel}>Select Service Showroom:</Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
-                  >
-                    {showrooms.map((sh) => {
-                      const isSelected = (selectedShowroomId || showrooms[0]?.id) === sh.id;
-                      return (
-                        <TouchableOpacity
-                          key={sh.id}
-                          style={[
-                            styles.outletChip,
-                            isSelected && styles.outletChipActive,
-                          ]}
-                          onPress={() => setSelectedShowroomId(sh.id)}
-                          activeOpacity={0.7}
-                        >
-                          <Ionicons
-                            name="business-outline"
-                            size={13}
-                            color={isSelected ? '#3b82f6' : '#94a3b8'}
-                          />
-                          <Text
-                            style={[
-                              styles.outletChipText,
-                              isSelected && styles.outletChipTextActive,
-                            ]}
-                          >
-                            {sh.name} ({sh.code})
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-              ) : null}
-
-              {/* Service Package Selector with Turnaround Duration */}
-              {packages.length > 0 ? (
-                <View style={{ marginBottom: 14 }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                    <Text style={styles.fieldSectionLabel}>Choose Maintenance Package:</Text>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setShowServiceModal(false);
-                        setCurrentRoute('services');
-                      }}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <Text style={styles.viewCatalogLink}>Full Catalog ›</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
-                  >
-                    {/* Custom / General repair chip */}
-                    <TouchableOpacity
-                      style={[
-                        styles.pkgCardChip,
-                        selectedPackage === null && styles.pkgCardChipActive,
-                      ]}
-                      onPress={() => setSelectedPackage(null)}
-                      activeOpacity={0.7}
-                    >
-                      <Text
-                        style={[
-                          styles.pkgCardChipTitle,
-                          selectedPackage === null && styles.pkgCardChipTitleActive,
-                        ]}
-                      >
-                        Custom / General Issue
-                      </Text>
-                      <Text style={styles.pkgCardChipSubtitle}>On-demand diagnostics</Text>
-                    </TouchableOpacity>
-
-                    {packages.map((pkg) => {
-                      const isSelected = selectedPackage?.id === pkg.id;
-                      return (
-                        <TouchableOpacity
-                          key={pkg.id}
-                          style={[
-                            styles.pkgCardChip,
-                            isSelected && styles.pkgCardChipActive,
-                          ]}
-                          onPress={() => {
-                            setSelectedPackage(pkg);
-                            setVehicleType(pkg.vehicle_type === 'CAR' ? 'CAR' : 'BIKE');
-                            setServiceDesc(`Package: ${pkg.title} (Est. Duration: ${pkg.duration})`);
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-                            <Text
-                              style={[
-                                styles.pkgCardChipTitle,
-                                isSelected && styles.pkgCardChipTitleActive,
-                              ]}
-                              numberOfLines={1}
-                            >
-                              {pkg.title}
-                            </Text>
-                            <Text style={styles.pkgCardPrice}>₹{pkg.price}</Text>
-                          </View>
-                          {/* Turnaround Duration Pill */}
-                          <View style={styles.pkgDurationPill}>
-                            <Ionicons name="time" size={11} color="#38bdf8" />
-                            <Text style={styles.pkgDurationPillText}>{pkg.duration}</Text>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-              ) : null}
-
-              {/* Active Package Estimated Turnaround Banner */}
-              {selectedPackage ? (
-                <View style={styles.packageBannerSelected}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <View style={styles.packageBannerIcon}>
-                      <Ionicons name="time" size={20} color="#38bdf8" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.packageBannerTitleSelected}>{selectedPackage.title}</Text>
-                      <Text style={styles.packageBannerSubSelected}>
-                        Estimated Turnaround Time: <Text style={{ color: '#38bdf8', fontWeight: '800' }}>{selectedPackage.duration}</Text>
-                      </Text>
-                    </View>
-                    <Text style={styles.packageBannerPriceSelected}>₹{selectedPackage.price}</Text>
-                  </View>
-                </View>
-              ) : null}
-
-              {/* Vehicle Type */}
-              <Text style={styles.fieldSectionLabel}>Vehicle Type:</Text>
-              <View style={styles.typeSelectorRow}>
-                <TouchableOpacity
-                  style={[styles.typeBtn, vehicleType === 'BIKE' && styles.typeBtnActive]}
-                  onPress={() => setVehicleType('BIKE')}
-                >
-                  <Text style={[styles.typeBtnText, vehicleType === 'BIKE' && styles.typeBtnTextActive]}>
-                    🏍️ Bike / Scooter
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.typeBtn, vehicleType === 'CAR' && styles.typeBtnActive]}
-                  onPress={() => setVehicleType('CAR')}
-                >
-                  <Text style={[styles.typeBtnText, vehicleType === 'CAR' && styles.typeBtnTextActive]}>
-                    🚗 Car
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <Input
-                label="Vehicle Model & Reg Number *"
-                placeholder="e.g. Hero Splendor Plus (MH 12 AB 1234)"
-                value={vehicleDetails}
-                onChangeText={setVehicleDetails}
-              />
-
-              {/* Preferred Date with Quick Select */}
-              <View style={{ marginBottom: 12 }}>
-                <Text style={styles.fieldSectionLabel}>Preferred Service Date:</Text>
-                <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8 }}>
+            {/* Step Indicator Tabs */}
+            <View style={styles.wizardIndicatorRow}>
+              {[
+                { num: 1, label: 'Showroom & Vehicle' },
+                { num: 2, label: 'Service Need' },
+                { num: 3, label: 'Date & Time' },
+                { num: 4, label: 'Review & Confirm' },
+              ].map((s) => {
+                const isActive = bookingStep === s.num;
+                const isCompleted = bookingStep > s.num;
+                return (
                   <TouchableOpacity
+                    key={s.num}
                     style={[
-                      styles.quickDateBtn,
-                      preferredDate === new Date().toISOString().split('T')[0] && styles.quickDateBtnActive,
-                    ]}
-                    onPress={() => setPreferredDate(new Date().toISOString().split('T')[0])}
-                  >
-                    <Text style={styles.quickDateText}>Today</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.quickDateBtn,
-                      (() => {
-                        const d = new Date();
-                        d.setDate(d.getDate() + 1);
-                        return preferredDate === d.toISOString().split('T')[0];
-                      })() && styles.quickDateBtnActive,
+                      styles.stepTab,
+                      isActive && styles.stepTabActive,
+                      isCompleted && styles.stepTabCompleted,
                     ]}
                     onPress={() => {
-                      const d = new Date();
-                      d.setDate(d.getDate() + 1);
-                      setPreferredDate(d.toISOString().split('T')[0]);
-                    }}
-                  >
-                    <Text style={styles.quickDateText}>Tomorrow</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.quickDateBtn,
-                      (() => {
-                        const d = new Date();
-                        d.setDate(d.getDate() + 2);
-                        return preferredDate === d.toISOString().split('T')[0];
-                      })() && styles.quickDateBtnActive,
-                    ]}
-                    onPress={() => {
-                      const d = new Date();
-                      d.setDate(d.getDate() + 2);
-                      setPreferredDate(d.toISOString().split('T')[0]);
-                    }}
-                  >
-                    <Text style={styles.quickDateText}>In 2 Days</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <Input
-                  label="Date (YYYY-MM-DD) *"
-                  placeholder="2026-10-09"
-                  value={preferredDate}
-                  onChangeText={setPreferredDate}
-                />
-              </View>
-
-              {/* Time Slot & Manual Time Selection */}
-              <View style={{ marginBottom: 14 }}>
-                <Text style={styles.fieldSectionLabel}>Appointment Time Slot:</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-                  {['09:00 AM - 11:00 AM', '11:00 AM - 01:00 PM', '02:00 PM - 04:00 PM', '04:00 PM - 06:00 PM'].map(
-                    (slot) => {
-                      const isSelected = !isCustomTime && timeSlot === slot;
-                      return (
-                        <TouchableOpacity
-                          key={slot}
-                          style={[styles.slotChip, isSelected && styles.slotChipActive]}
-                          onPress={() => {
-                            setTimeSlot(slot);
-                            setIsCustomTime(false);
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Ionicons
-                            name="time-outline"
-                            size={12}
-                            color={isSelected ? '#3b82f6' : '#94a3b8'}
-                          />
-                          <Text style={[styles.slotChipText, isSelected && styles.slotChipTextActive]}>
-                            {slot}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    }
-                  )}
-
-                  {/* Manual / Custom Time Button */}
-                  <TouchableOpacity
-                    style={[styles.slotChip, isCustomTime && styles.slotChipActive]}
-                    onPress={() => {
-                      setIsCustomTime(true);
-                      if (!customTime) setCustomTime('10:30 AM');
+                      if (s.num < bookingStep) setBookingStep(s.num);
                     }}
                     activeOpacity={0.7}
                   >
-                    <Ionicons
-                      name="create-outline"
-                      size={12}
-                      color={isCustomTime ? '#3b82f6' : '#94a3b8'}
-                    />
-                    <Text style={[styles.slotChipText, isCustomTime && styles.slotChipTextActive]}>
-                      ✏️ Custom Time
+                    <Text
+                      style={[
+                        styles.stepTabNum,
+                        isActive && styles.stepTabNumActive,
+                        isCompleted && styles.stepTabNumCompleted,
+                      ]}
+                    >
+                      Step {s.num}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.stepTabLabel,
+                        isActive && styles.stepTabLabelActive,
+                        isCompleted && styles.stepTabLabelCompleted,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {s.label}
                     </Text>
                   </TouchableOpacity>
-                </View>
+                );
+              })}
+            </View>
 
-                {/* Custom Manual Time Input */}
-                {isCustomTime ? (
-                  <View style={{ marginTop: 4, marginBottom: 8 }}>
-                    <Input
-                      label="Specify Custom Preferred Time (e.g. 10:30 AM, 04:15 PM) *"
-                      placeholder="e.g. 10:30 AM"
-                      value={customTime}
-                      onChangeText={setCustomTime}
+            <ScrollView showsVerticalScrollIndicator={false} style={{ marginVertical: 4 }}>
+              {/* STEP 1: Showroom & Vehicle */}
+              {bookingStep === 1 && (
+                <View>
+                  <View style={styles.stepCardHeader}>
+                    <Ionicons name="business" size={18} color="#3b82f6" />
+                    <Text style={styles.stepCardTitle}>Step 1: Select Showroom & Vehicle</Text>
+                  </View>
+                  <Text style={styles.stepCardSubtitle}>Choose target servicing showroom and vehicle details.</Text>
+
+                  {/* Showroom Outlet Selector */}
+                  <View style={{ marginBottom: 14 }}>
+                    <Text style={styles.fieldSectionLabel}>SELECT SERVICING SHOWROOM LOCATION</Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
+                    >
+                      {showrooms.map((sh) => {
+                        const isSelected = (selectedShowroomId || showrooms[0]?.id) === sh.id;
+                        return (
+                          <TouchableOpacity
+                            key={sh.id}
+                            style={[
+                              styles.outletChip,
+                              isSelected && styles.outletChipActive,
+                            ]}
+                            onPress={() => setSelectedShowroomId(sh.id)}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons
+                              name="business-outline"
+                              size={13}
+                              color={isSelected ? '#3b82f6' : '#94a3b8'}
+                            />
+                            <Text
+                              style={[
+                                styles.outletChipText,
+                                isSelected && styles.outletChipTextActive,
+                              ]}
+                            >
+                              {sh.name} ({sh.code})
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+
+                  {/* Pick From Saved Vehicles */}
+                  {savedVehicles.length > 0 && (
+                    <View style={{ marginBottom: 14 }}>
+                      <Text style={styles.fieldSectionLabel}>PICK FROM MY SAVED VEHICLES</Text>
+                      {savedVehicles.map((v) => {
+                        const isSelected = selectedVehicleId === v.id;
+                        return (
+                          <TouchableOpacity
+                            key={v.id}
+                            style={[
+                              styles.savedVehicleCard,
+                              isSelected && styles.savedVehicleCardActive,
+                            ]}
+                            onPress={() => {
+                              setSelectedVehicleId(v.id);
+                              setVehicleType(v.vehicle_type);
+                              setVehicleDetails(`${v.title} (${v.reg_number})`);
+                            }}
+                            activeOpacity={0.8}
+                          >
+                            <View style={styles.savedVehicleIconBox}>
+                              <Ionicons
+                                name={v.vehicle_type === 'CAR' ? 'car' : 'bicycle'}
+                                size={18}
+                                color={isSelected ? '#3b82f6' : '#94a3b8'}
+                              />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.savedVehicleTitle}>{v.title}</Text>
+                              <Text style={styles.savedVehicleReg}>{v.reg_number}</Text>
+                            </View>
+                            {isSelected && (
+                              <Ionicons name="checkmark-circle" size={18} color="#3b82f6" />
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+
+                  {/* Vehicle Type Selector */}
+                  <Text style={styles.fieldSectionLabel}>VEHICLE TYPE</Text>
+                  <View style={styles.typeSelectorRow}>
+                    <TouchableOpacity
+                      style={[styles.typeBtn, vehicleType === 'BIKE' && styles.typeBtnActive]}
+                      onPress={() => setVehicleType('BIKE')}
+                    >
+                      <Text style={[styles.typeBtnText, vehicleType === 'BIKE' && styles.typeBtnTextActive]}>
+                        🏍️ Bike / Motorcycle
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.typeBtn, vehicleType === 'CAR' && styles.typeBtnActive]}
+                      onPress={() => setVehicleType('CAR')}
+                    >
+                      <Text style={[styles.typeBtnText, vehicleType === 'CAR' && styles.typeBtnTextActive]}>
+                        🚗 Car / Four-Wheeler
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Vehicle Model & Reg Number */}
+                  <Input
+                    label="Vehicle Model & Reg Number *"
+                    placeholder="e.g. Hero Splendor BS6 (UP32 AB 1234)"
+                    value={vehicleDetails}
+                    onChangeText={(txt) => {
+                      setVehicleDetails(txt);
+                      setSelectedVehicleId('');
+                    }}
+                  />
+
+                  {/* Navigation Row */}
+                  <View style={styles.wizardNavRow}>
+                    <Button
+                      title="Next: Service Need ›"
+                      onPress={() => {
+                        if (!vehicleDetails.trim()) {
+                          Alert.alert('Vehicle Required', 'Please enter or select vehicle model & registration number.');
+                          return;
+                        }
+                        setBookingStep(2);
+                      }}
+                      style={{ flex: 1 }}
                     />
                   </View>
-                ) : null}
-
-                {/* Live Appointment Time Display Indicator */}
-                <View style={styles.activeTimeSlotDisplay}>
-                  <Ionicons name="time" size={14} color="#f59e0b" />
-                  <Text style={styles.activeTimeSlotDisplayText}>
-                    Appointment Time: <Text style={{ color: '#fbbf24', fontWeight: '800' }}>
-                      {isCustomTime ? (customTime.trim() || 'Enter manual time above') : timeSlot}
-                    </Text>
-                    {isCustomTime ? ' (Custom Manual Time)' : ''}
-                  </Text>
                 </View>
-              </View>
+              )}
 
-              <Input
-                label="Service Issue Description *"
-                placeholder="e.g. Annual general service, engine oil change, brake check"
-                value={serviceDesc}
-                onChangeText={setServiceDesc}
-                multiline
-                numberOfLines={3}
-              />
-
-              {/* Review & Confirm Summary Card */}
-              <View style={styles.bookingSummaryCard}>
-                <View style={styles.summaryHeader}>
-                  <Ionicons name="checkmark-circle-outline" size={16} color="#10b981" />
-                  <Text style={styles.summaryHeaderTitle}>Appointment Overview</Text>
-                </View>
-                <View style={styles.summaryDetails}>
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Scheduled Time:</Text>
-                    <Text style={styles.summaryValueHighlight}>
-                      📅 {preferredDate} • ⏰ {isCustomTime ? (customTime.trim() || 'Manual') : timeSlot}
-                    </Text>
+              {/* STEP 2: Service Need */}
+              {bookingStep === 2 && (
+                <View>
+                  <View style={styles.stepCardHeader}>
+                    <Ionicons name="construct" size={18} color="#f59e0b" />
+                    <Text style={styles.stepCardTitle}>Step 2: Describe Service Needs</Text>
                   </View>
-                  {selectedPackage ? (
-                    <View style={styles.summaryRow}>
-                      <Text style={styles.summaryLabel}>Turnaround Time:</Text>
-                      <Text style={styles.summaryValueTurnaround}>
-                        ⏱️ {selectedPackage.duration} ({selectedPackage.title})
+                  <Text style={styles.stepCardSubtitle}>Specify requested servicing package or describe issues.</Text>
+
+                  {/* Service Package Selector with Turnaround Duration */}
+                  {packages.length > 0 && (
+                    <View style={{ marginBottom: 14 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <Text style={styles.fieldSectionLabel}>CERTIFIED MAINTENANCE PACKAGES (OPTIONAL)</Text>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setShowServiceModal(false);
+                            setCurrentRoute('services');
+                          }}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Text style={styles.viewCatalogLink}>Full Catalog ›</Text>
+                        </TouchableOpacity>
+                      </View>
+
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
+                      >
+                        <TouchableOpacity
+                          style={[
+                            styles.pkgCardChip,
+                            selectedPackage === null && styles.pkgCardChipActive,
+                          ]}
+                          onPress={() => setSelectedPackage(null)}
+                          activeOpacity={0.7}
+                        >
+                          <Text
+                            style={[
+                              styles.pkgCardChipTitle,
+                              selectedPackage === null && styles.pkgCardChipTitleActive,
+                            ]}
+                          >
+                            Custom / General Issue
+                          </Text>
+                          <Text style={styles.pkgCardChipSubtitle}>On-demand diagnostics</Text>
+                        </TouchableOpacity>
+
+                        {packages.map((pkg) => {
+                          const isSelected = selectedPackage?.id === pkg.id;
+                          return (
+                            <TouchableOpacity
+                              key={pkg.id}
+                              style={[
+                                styles.pkgCardChip,
+                                isSelected && styles.pkgCardChipActive,
+                              ]}
+                              onPress={() => {
+                                setSelectedPackage(pkg);
+                                setVehicleType(pkg.vehicle_type === 'CAR' ? 'CAR' : 'BIKE');
+                                setServiceDesc(`Booking Package: ${pkg.title} (Duration: ${pkg.duration})`);
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                                <Text
+                                  style={[
+                                    styles.pkgCardChipTitle,
+                                    isSelected && styles.pkgCardChipTitleActive,
+                                  ]}
+                                  numberOfLines={1}
+                                >
+                                  {pkg.title}
+                                </Text>
+                                <Text style={styles.pkgCardPrice}>₹{pkg.price}</Text>
+                              </View>
+                              <View style={styles.pkgDurationPill}>
+                                <Ionicons name="time" size={11} color="#38bdf8" />
+                                <Text style={styles.pkgDurationPillText}>{pkg.duration}</Text>
+                              </View>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
+                    </View>
+                  )}
+
+                  {/* Active Package Banner with Turnaround Duration */}
+                  {selectedPackage && (
+                    <View style={styles.packageBannerSelected}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        <View style={styles.packageBannerIcon}>
+                          <Ionicons name="time" size={20} color="#38bdf8" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.packageBannerTitleSelected}>{selectedPackage.title}</Text>
+                          <Text style={styles.packageBannerSubSelected}>
+                            Estimated Turnaround Time: <Text style={{ color: '#38bdf8', fontWeight: '800' }}>{selectedPackage.duration}</Text>
+                          </Text>
+                        </View>
+                        <Text style={styles.packageBannerPriceSelected}>₹{selectedPackage.price}</Text>
+                      </View>
+                    </View>
+                  )}
+
+                  <Input
+                    label="Service Requirements / Issue Notes *"
+                    placeholder="Describe issues (e.g. Engine oil change, brake squeal, 50-point general servicing)..."
+                    value={serviceDesc}
+                    onChangeText={setServiceDesc}
+                    multiline
+                    numberOfLines={4}
+                  />
+
+                  {/* Navigation Row */}
+                  <View style={styles.wizardNavRow}>
+                    <Button
+                      title="‹ Back"
+                      variant="secondary"
+                      onPress={() => setBookingStep(1)}
+                      style={{ flex: 1 }}
+                    />
+                    <Button
+                      title="Next: Date & Time ›"
+                      onPress={() => {
+                        if (!serviceDesc.trim()) {
+                          Alert.alert('Service Need Required', 'Please describe the service requirements.');
+                          return;
+                        }
+                        setBookingStep(3);
+                      }}
+                      style={{ flex: 2 }}
+                    />
+                  </View>
+                </View>
+              )}
+
+              {/* STEP 3: Date & Time */}
+              {bookingStep === 3 && (
+                <View>
+                  <View style={styles.stepCardHeader}>
+                    <Ionicons name="calendar" size={18} color="#38bdf8" />
+                    <Text style={styles.stepCardTitle}>Step 3: Preferred Date & Time Slot</Text>
+                  </View>
+                  <Text style={styles.stepCardSubtitle}>Select preferred appointment date and time window.</Text>
+
+                  {/* Preferred Service Date */}
+                  <View style={{ marginBottom: 14 }}>
+                    <Text style={styles.fieldSectionLabel}>PREFERRED SERVICE DATE</Text>
+                    <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8 }}>
+                      <TouchableOpacity
+                        style={[
+                          styles.quickDateBtn,
+                          preferredDate === new Date().toISOString().split('T')[0] && styles.quickDateBtnActive,
+                        ]}
+                        onPress={() => setPreferredDate(new Date().toISOString().split('T')[0])}
+                      >
+                        <Text style={styles.quickDateText}>Today</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.quickDateBtn,
+                          (() => {
+                            const d = new Date();
+                            d.setDate(d.getDate() + 1);
+                            return preferredDate === d.toISOString().split('T')[0];
+                          })() && styles.quickDateBtnActive,
+                        ]}
+                        onPress={() => {
+                          const d = new Date();
+                          d.setDate(d.getDate() + 1);
+                          setPreferredDate(d.toISOString().split('T')[0]);
+                        }}
+                      >
+                        <Text style={styles.quickDateText}>Tomorrow</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.quickDateBtn,
+                          (() => {
+                            const d = new Date();
+                            d.setDate(d.getDate() + 2);
+                            return preferredDate === d.toISOString().split('T')[0];
+                          })() && styles.quickDateBtnActive,
+                        ]}
+                        onPress={() => {
+                          const d = new Date();
+                          d.setDate(d.getDate() + 2);
+                          setPreferredDate(d.toISOString().split('T')[0]);
+                        }}
+                      >
+                        <Text style={styles.quickDateText}>In 2 Days</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <Input
+                      label="Date (YYYY-MM-DD) *"
+                      placeholder="2026-10-09"
+                      value={preferredDate}
+                      onChangeText={setPreferredDate}
+                    />
+                  </View>
+
+                  {/* Time Slot & Manual Time Selection */}
+                  <View style={{ marginBottom: 14 }}>
+                    <Text style={styles.fieldSectionLabel}>PREFERRED TIME WINDOW / SLOT</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                      {['09:00 AM - 11:00 AM', '11:00 AM - 01:00 PM', '02:00 PM - 04:00 PM', '04:00 PM - 06:00 PM'].map(
+                        (slot) => {
+                          const isSelected = !isCustomTime && timeSlot === slot;
+                          return (
+                            <TouchableOpacity
+                              key={slot}
+                              style={[styles.slotChip, isSelected && styles.slotChipActive]}
+                              onPress={() => {
+                                setTimeSlot(slot);
+                                setIsCustomTime(false);
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <Ionicons
+                                name="time-outline"
+                                size={12}
+                                color={isSelected ? '#3b82f6' : '#94a3b8'}
+                              />
+                              <Text style={[styles.slotChipText, isSelected && styles.slotChipTextActive]}>
+                                {slot}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        }
+                      )}
+
+                      {/* Manual / Custom Time Button */}
+                      <TouchableOpacity
+                        style={[styles.slotChip, isCustomTime && styles.slotChipActive]}
+                        onPress={() => {
+                          setIsCustomTime(true);
+                          if (!customTime) setCustomTime('10:30 AM');
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons
+                          name="create-outline"
+                          size={12}
+                          color={isCustomTime ? '#3b82f6' : '#94a3b8'}
+                        />
+                        <Text style={[styles.slotChipText, isCustomTime && styles.slotChipTextActive]}>
+                          ✏️ Custom Time
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Custom Manual Time Input */}
+                    {isCustomTime && (
+                      <View style={{ marginTop: 4, marginBottom: 8 }}>
+                        <Input
+                          label="Specify Custom Preferred Time (e.g. 10:30 AM, 04:15 PM) *"
+                          placeholder="e.g. 10:30 AM"
+                          value={customTime}
+                          onChangeText={setCustomTime}
+                        />
+                      </View>
+                    )}
+
+                    {/* Live Appointment Time Display Indicator */}
+                    <View style={styles.activeTimeSlotDisplay}>
+                      <Ionicons name="time" size={14} color="#f59e0b" />
+                      <Text style={styles.activeTimeSlotDisplayText}>
+                        Appointment Time: <Text style={{ color: '#fbbf24', fontWeight: '800' }}>
+                          {isCustomTime ? (customTime.trim() || 'Enter manual time above') : timeSlot}
+                        </Text>
+                        {isCustomTime ? ' (Custom Manual Time)' : ''}
                       </Text>
                     </View>
-                  ) : null}
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Vehicle:</Text>
-                    <Text style={styles.summaryValue}>
-                      {vehicleDetails ? vehicleDetails : 'Pending vehicle details'} ({vehicleType})
-                    </Text>
+                  </View>
+
+                  {/* Navigation Row */}
+                  <View style={styles.wizardNavRow}>
+                    <Button
+                      title="‹ Back"
+                      variant="secondary"
+                      onPress={() => setBookingStep(2)}
+                      style={{ flex: 1 }}
+                    />
+                    <Button
+                      title="Next: Review & Confirm ›"
+                      onPress={() => {
+                        if (isCustomTime && !customTime.trim()) {
+                          Alert.alert('Time Required', 'Please enter your preferred manual appointment time.');
+                          return;
+                        }
+                        setBookingStep(4);
+                      }}
+                      style={{ flex: 2 }}
+                    />
                   </View>
                 </View>
-              </View>
-            </ScrollView>
+              )}
 
-            <View style={styles.modalActions}>
-              <Button
-                title="Confirm & Book Service"
-                onPress={handleCreateServiceBooking}
-                isLoading={isSubmittingService}
-              />
-              <Button
-                title="Cancel"
-                variant="secondary"
-                onPress={() => {
-                  setShowServiceModal(false);
-                  setSelectedPackage(null);
-                }}
-              />
-            </View>
+              {/* STEP 4: Review & Confirm */}
+              {bookingStep === 4 && (
+                <View>
+                  <View style={styles.stepCardHeader}>
+                    <Ionicons name="shield-checkmark" size={18} color="#10b981" />
+                    <Text style={styles.stepCardTitle}>Step 4: Review & Confirm Booking</Text>
+                  </View>
+                  <Text style={styles.stepCardSubtitle}>Review appointment details before submitting.</Text>
+
+                  <View style={styles.bookingSummaryCard}>
+                    <View style={styles.summaryDetails}>
+                      <View style={styles.summaryRow}>
+                        <Text style={styles.summaryLabel}>Customer Name:</Text>
+                        <Text style={styles.summaryValue}>{user?.full_name} ({user?.phone})</Text>
+                      </View>
+                      <View style={styles.summaryRow}>
+                        <Text style={styles.summaryLabel}>Vehicle:</Text>
+                        <Text style={styles.summaryValueHighlight}>{vehicleDetails} ({vehicleType})</Text>
+                      </View>
+                      <View style={styles.summaryRow}>
+                        <Text style={styles.summaryLabel}>Service Description:</Text>
+                        <Text style={styles.summaryValue}>{serviceDesc}</Text>
+                      </View>
+                      {selectedPackage && (
+                        <View style={styles.summaryRow}>
+                          <Text style={styles.summaryLabel}>Turnaround Time:</Text>
+                          <Text style={styles.summaryValueTurnaround}>
+                            ⏱️ {selectedPackage.duration} ({selectedPackage.title})
+                          </Text>
+                        </View>
+                      )}
+                      <View style={styles.summaryRow}>
+                        <Text style={styles.summaryLabel}>Appointment Slot:</Text>
+                        <Text style={styles.summaryValueHighlight}>
+                          📅 {preferredDate} • ⏰ {isCustomTime ? customTime.trim() : timeSlot}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Navigation Row */}
+                  <View style={styles.wizardNavRow}>
+                    <Button
+                      title="‹ Back"
+                      variant="secondary"
+                      onPress={() => setBookingStep(3)}
+                      style={{ flex: 1 }}
+                    />
+                    <Button
+                      title="Confirm & Book Service"
+                      onPress={handleCreateServiceBooking}
+                      isLoading={isSubmittingService}
+                      style={{ flex: 2 }}
+                    />
+                  </View>
+                </View>
+              )}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1466,5 +1672,107 @@ const styles = StyleSheet.create({
     color: '#10b981',
     fontSize: 11,
     fontWeight: '800',
+  },
+  wizardIndicatorRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 14,
+  },
+  stepTab: {
+    flex: 1,
+    backgroundColor: '#1e293b',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  stepTabActive: {
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    borderColor: '#3b82f6',
+  },
+  stepTabCompleted: {
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    borderColor: 'rgba(16, 185, 129, 0.4)',
+  },
+  stepTabNum: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#64748b',
+    marginBottom: 2,
+  },
+  stepTabNumActive: {
+    color: '#38bdf8',
+  },
+  stepTabNumCompleted: {
+    color: '#10b981',
+  },
+  stepTabLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#64748b',
+    textAlign: 'center',
+  },
+  stepTabLabelActive: {
+    color: '#f8fafc',
+  },
+  stepTabLabelCompleted: {
+    color: '#a7f3d0',
+  },
+  stepCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  stepCardTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#f8fafc',
+  },
+  stepCardSubtitle: {
+    fontSize: 11,
+    color: '#94a3b8',
+    marginBottom: 14,
+  },
+  savedVehicleCard: {
+    backgroundColor: '#1e293b',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#334155',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
+  },
+  savedVehicleCardActive: {
+    backgroundColor: 'rgba(59, 130, 246, 0.18)',
+    borderColor: '#3b82f6',
+  },
+  savedVehicleIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  savedVehicleTitle: {
+    color: '#f8fafc',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  savedVehicleReg: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontFamily: 'monospace',
+    marginTop: 2,
+  },
+  wizardNavRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 16,
   },
 });
