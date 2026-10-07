@@ -14,6 +14,7 @@ import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { useAuthStore } from '../store/auth.store';
 import { getStaffMembers, createStaffMember, StaffMember } from '../lib/staff-api';
+import { getServiceJobs, updateServiceJob, ServiceJobItem } from '../lib/services-api';
 
 interface AdminDashboardScreenProps {
   onNavigateToVehicles?: () => void;
@@ -27,8 +28,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
   const { user, logout } = useAuthStore();
 
   const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [serviceJobs, setServiceJobs] = useState<ServiceJobItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+
+  // Assign Worker Modal
+  const [selectedJob, setSelectedJob] = useState<ServiceJobItem | null>(null);
+  const [isAssigning, setIsAssigning] = useState(false);
 
   // Form States
   const [fullName, setFullName] = useState('');
@@ -38,20 +44,24 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
   const [role, setRole] = useState<'WORKER' | 'INVENTORY_MANAGER'>('WORKER');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fetchStaffData = async () => {
+  const fetchAdminData = async () => {
     try {
-      const data = await getStaffMembers();
-      setStaff(data);
-    } catch (err: any) {
-      // Gracefully handle if no staff yet
+      const [staffData, jobsData] = await Promise.all([
+        getStaffMembers().catch(() => []),
+        getServiceJobs().catch(() => []),
+      ]);
+      setStaff(staffData);
+      setServiceJobs(jobsData);
+    } catch {
       setStaff([]);
+      setServiceJobs([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchStaffData();
+    fetchAdminData();
   }, []);
 
   const handleCreateStaff = async () => {
@@ -82,11 +92,30 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
       setPhone('');
       setEmail('');
       setPassword('');
-      fetchStaffData();
+      fetchAdminData();
     } catch (err: any) {
       Alert.alert('Failed', err.message || 'Could not provision staff member');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleAssignTechnician = async (workerId: string, workerName: string) => {
+    if (!selectedJob) return;
+    try {
+      setIsAssigning(true);
+      await updateServiceJob(selectedJob.id, {
+        assigned_worker_id: workerId,
+        status: 'ASSIGNED',
+      });
+
+      Alert.alert('Worker Assigned', `Allocated service job for ${selectedJob.customer_name} to ${workerName}.`);
+      setSelectedJob(null);
+      fetchAdminData();
+    } catch (err: any) {
+      Alert.alert('Assignment Failed', err.message || 'Failed to assign technician.');
+    } finally {
+      setIsAssigning(false);
     }
   };
 
@@ -95,6 +124,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
 
   const workerCount = staff.filter((s) => s.role === 'WORKER').length;
   const inventoryCount = staff.filter((s) => s.role === 'INVENTORY_MANAGER').length;
+  const workersList = staff.filter((s) => s.role === 'WORKER');
 
   return (
     <SafeScreen>
@@ -154,6 +184,47 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
             <Text style={styles.shortcutTitle}>Provision Staff</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Service Jobs Dispatch Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Service Jobs & Worker Dispatch</Text>
+        </View>
+
+        {serviceJobs.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyText}>No service requests logged for this showroom.</Text>
+          </View>
+        ) : (
+          serviceJobs.map((job) => (
+            <View key={job.id} style={styles.staffCard}>
+              <View style={styles.staffHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.staffName}>{job.customer_name}</Text>
+                  <Text style={styles.staffPhone}>📞 {job.customer_phone}</Text>
+                  <Text style={{ color: '#38bdf8', fontSize: 13, marginTop: 2 }}>{job.vehicle_details} ({job.vehicle_type})</Text>
+                  <Text style={{ color: '#cbd5e1', fontSize: 12, marginTop: 4 }}>Issue: {job.service_description}</Text>
+                </View>
+                <View style={[styles.roleBadge, { backgroundColor: job.status === 'COMPLETED' ? '#10b981' : job.status === 'IN_PROGRESS' ? '#f59e0b' : '#3b82f6' }]}>
+                  <Text style={styles.roleText}>{job.status}</Text>
+                </View>
+              </View>
+
+              <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#1e293b', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={{ color: '#94a3b8', fontSize: 12 }}>
+                  {job.assigned_worker_name ? `Technician: ${job.assigned_worker_name}` : 'Unassigned'}
+                </Text>
+                <TouchableOpacity
+                  style={{ backgroundColor: '#8b5cf6', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}
+                  onPress={() => setSelectedJob(job)}
+                >
+                  <Text style={{ color: '#ffffff', fontSize: 11, fontWeight: '700' }}>
+                    {job.assigned_worker_name ? 'Reassign' : 'Assign Worker'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))
+        )}
 
         {/* Staff Directory Section */}
         <View style={styles.sectionHeader}>
@@ -250,6 +321,69 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
               <Button title="Provision Staff Account" onPress={handleCreateStaff} isLoading={isSubmitting} style={styles.modalSubmitBtn} />
               <Button title="Cancel" onPress={() => setShowModal(false)} variant="secondary" />
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal: Select Technician / Worker for Service Job */}
+      <Modal
+        visible={selectedJob !== null}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setSelectedJob(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Assign Service Technician</Text>
+            <Text style={{ color: '#94a3b8', fontSize: 13, marginBottom: 14, textAlign: 'center' }}>
+              Select a technician for job #{selectedJob?.id.slice(0, 8)} ({selectedJob?.customer_name})
+            </Text>
+
+            {workersList.length === 0 ? (
+              <View style={{ padding: 16, alignItems: 'center' }}>
+                <Text style={{ color: '#ef4444', fontSize: 13, marginBottom: 10, textAlign: 'center' }}>
+                  No active Technicians / Workers provisioned for this showroom yet.
+                </Text>
+                <Button
+                  title="➕ Provision Technician First"
+                  onPress={() => {
+                    setSelectedJob(null);
+                    setRole('WORKER');
+                    setShowModal(true);
+                  }}
+                />
+              </View>
+            ) : (
+              workersList.map((worker) => (
+                <TouchableOpacity
+                  key={worker.id}
+                  style={{
+                    backgroundColor: '#1e293b',
+                    padding: 14,
+                    borderRadius: 10,
+                    marginBottom: 8,
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                  onPress={() => handleAssignTechnician(worker.id, worker.full_name)}
+                  disabled={isAssigning}
+                >
+                  <View>
+                    <Text style={{ color: '#f8fafc', fontSize: 15, fontWeight: '700' }}>🔧 {worker.full_name}</Text>
+                    <Text style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>📞 {worker.phone}</Text>
+                  </View>
+                  <Text style={{ color: '#8b5cf6', fontSize: 12, fontWeight: '700' }}>Allocate →</Text>
+                </TouchableOpacity>
+              ))
+            )}
+
+            <Button
+              title="Close"
+              variant="secondary"
+              onPress={() => setSelectedJob(null)}
+              style={{ marginTop: 12 }}
+            />
           </View>
         </View>
       </Modal>

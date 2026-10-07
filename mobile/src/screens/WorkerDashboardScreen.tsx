@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import { SafeScreen } from '../components/ui/SafeScreen';
 import { Button } from '../components/ui/Button';
 import { useAuthStore } from '../store/auth.store';
-import { getServiceJobs, ServiceJobItem } from '../lib/services-api';
+import { getServiceJobs, updateServiceJob, ServiceJobItem, ServiceJobStatus } from '../lib/services-api';
 
 export const WorkerDashboardScreen: React.FC = () => {
   const { user, logout } = useAuthStore();
   const [jobs, setJobs] = useState<ServiceJobItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const fetchJobs = async () => {
     try {
@@ -24,6 +25,19 @@ export const WorkerDashboardScreen: React.FC = () => {
   useEffect(() => {
     fetchJobs();
   }, []);
+
+  const handleUpdateStatus = async (jobId: string, newStatus: ServiceJobStatus) => {
+    try {
+      setUpdatingId(jobId);
+      await updateServiceJob(jobId, { status: newStatus });
+      Alert.alert('Status Updated', `Service job status updated to ${newStatus}.`);
+      fetchJobs();
+    } catch (err: any) {
+      Alert.alert('Update Failed', err.message || 'Failed to update job status.');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   const showroomTitle = user?.showroom_name || user?.showroom?.name || 'Dealership Service Bay';
   const showroomCode = user?.showroom_code || user?.showroom?.code || 'SHW-01';
@@ -85,13 +99,40 @@ export const WorkerDashboardScreen: React.FC = () => {
             <View key={job.id} style={styles.jobItemCard}>
               <View style={styles.jobHeaderRow}>
                 <Text style={styles.jobCustomer}>{job.customer_name}</Text>
-                <View style={styles.jobStatusTag}>
+                <View style={[styles.jobStatusTag, { backgroundColor: job.status === 'COMPLETED' ? '#10b981' : job.status === 'IN_PROGRESS' ? '#f59e0b' : '#3b82f6' }]}>
                   <Text style={styles.jobStatusText}>{job.status}</Text>
                 </View>
               </View>
               <Text style={styles.jobVehicle}>{job.vehicle_details} ({job.vehicle_type})</Text>
               <Text style={styles.jobDesc}>{job.service_description}</Text>
               <Text style={styles.jobPhone}>📞 Contact: {job.customer_phone}</Text>
+
+              {/* Status Action Controls */}
+              <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#1e293b', flexDirection: 'row', gap: 10 }}>
+                {job.status !== 'IN_PROGRESS' && job.status !== 'COMPLETED' ? (
+                  <TouchableOpacity
+                    style={{ flex: 1, backgroundColor: '#f59e0b', paddingVertical: 8, borderRadius: 8, alignItems: 'center' }}
+                    onPress={() => handleUpdateStatus(job.id, 'IN_PROGRESS')}
+                    disabled={updatingId === job.id}
+                  >
+                    <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '700' }}>⚡ Start Repair</Text>
+                  </TouchableOpacity>
+                ) : null}
+
+                {job.status !== 'COMPLETED' ? (
+                  <TouchableOpacity
+                    style={{ flex: 1, backgroundColor: '#10b981', paddingVertical: 8, borderRadius: 8, alignItems: 'center' }}
+                    onPress={() => handleUpdateStatus(job.id, 'COMPLETED')}
+                    disabled={updatingId === job.id}
+                  >
+                    <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '700' }}>✅ Mark Complete</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={{ flex: 1, backgroundColor: '#1e293b', paddingVertical: 8, borderRadius: 8, alignItems: 'center' }}>
+                    <Text style={{ color: '#10b981', fontSize: 12, fontWeight: '700' }}>Job Finished 🎉</Text>
+                  </View>
+                )}
+              </View>
             </View>
           ))
         )}
