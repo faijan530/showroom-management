@@ -23,3 +23,19 @@ export async function provisionShowroomAdmin(input: CreateAdminInput): Promise<a
   const response = await apiClient.post('/superadmin/admins', input);
   return response.data.data.admin;
 }
+
+export interface AuditLogItem {
+  id: string;
+  action: string;
+  entity: string;
+  actor_name: string;
+  actor_role: string;
+  showroom_name: string;
+  created_at: string;
+}
+
+export async function getAuditLogs(): Promise<AuditLogItem[]> {
+  const response = await apiClient.get('/superadmin/audit-logs');
+  return response.data.data.logs || [];
+}
+

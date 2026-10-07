@@ -19,6 +19,8 @@ import {
   createShowroom,
   updateShowroomStatus,
   provisionShowroomAdmin,
+  getAuditLogs,
+  AuditLogItem,
 } from '../lib/showrooms-api';
 import { Showroom } from '../types/showroom';
 
@@ -26,8 +28,10 @@ export const SuperAdminDashboardScreen: React.FC = () => {
   const { user, logout } = useAuthStore();
 
   const [showrooms, setShowrooms] = useState<Showroom[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'SUSPENDED'>('ALL');
 
   // Modal States
   const [showAddShowroomModal, setShowAddShowroomModal] = useState(false);
@@ -51,10 +55,14 @@ export const SuperAdminDashboardScreen: React.FC = () => {
 
   const fetchPlatformData = async () => {
     try {
-      const data = await getShowrooms();
-      setShowrooms(data);
+      const [showroomsData, logsData] = await Promise.all([
+        getShowrooms(),
+        getAuditLogs().catch(() => []),
+      ]);
+      setShowrooms(showroomsData);
+      setAuditLogs(logsData);
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to load platform showrooms');
+      Alert.alert('Error', err.message || 'Failed to load platform data');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -193,71 +201,125 @@ export const SuperAdminDashboardScreen: React.FC = () => {
         />
 
         {/* Showrooms Directory Section */}
-        <View style={styles.sectionHeader}>
+        <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionTitle}>Registered Dealerships</Text>
+
+          <View style={styles.filterRow}>
+            {(['ALL', 'ACTIVE', 'SUSPENDED'] as const).map((st) => (
+              <TouchableOpacity
+                key={st}
+                style={[
+                  styles.filterChip,
+                  statusFilter === st ? styles.filterChipActive : null,
+                ]}
+                onPress={() => setStatusFilter(st)}
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    statusFilter === st ? styles.filterChipTextActive : null,
+                  ]}
+                >
+                  {st}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
         {loading ? (
           <ActivityIndicator size="large" color="#3b82f6" style={styles.loader} />
-        ) : showrooms.length === 0 ? (
+        ) : showrooms.filter((s) => statusFilter === 'ALL' || s.status === statusFilter).length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No registered showrooms found.</Text>
+            <Text style={styles.emptyText}>No {statusFilter !== 'ALL' ? statusFilter.toLowerCase() : ''} showrooms found.</Text>
           </View>
         ) : (
-          showrooms.map((showroom) => (
-            <View key={showroom.id} style={styles.showroomCard}>
-              <View style={styles.cardHeaderRow}>
-                <View style={styles.showroomTitleCol}>
-                  <Text style={styles.showroomName}>{showroom.name}</Text>
-                  <Text style={styles.showroomCode}>CODE: {showroom.code}</Text>
+          showrooms
+            .filter((s) => statusFilter === 'ALL' || s.status === statusFilter)
+            .map((showroom) => (
+              <View key={showroom.id} style={styles.showroomCard}>
+                <View style={styles.cardHeaderRow}>
+                  <View style={styles.showroomTitleCol}>
+                    <Text style={styles.showroomName}>{showroom.name}</Text>
+                    <Text style={styles.showroomCode}>CODE: {showroom.code}</Text>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      showroom.status === 'ACTIVE'
+                        ? styles.statusActive
+                        : styles.statusSuspended,
+                    ]}
+                  >
+                    <Text style={styles.statusText}>{showroom.status}</Text>
+                  </View>
                 </View>
 
-                <View
-                  style={[
-                    styles.statusBadge,
-                    showroom.status === 'ACTIVE'
-                      ? styles.statusActive
-                      : styles.statusSuspended,
-                  ]}
-                >
-                  <Text style={styles.statusText}>{showroom.status}</Text>
+                <Text style={styles.addressText}>📍 {showroom.address}</Text>
+                <Text style={styles.contactText}>
+                  📞 {showroom.contact_phone} • ✉️ {showroom.contact_email}
+                </Text>
+
+                {/* Action Buttons Row */}
+                <View style={styles.cardActionsRow}>
+                  <TouchableOpacity
+                    style={styles.adminActionBtn}
+                    onPress={() => {
+                      setSelectedShowroomForAdmin(showroom);
+                      setShowAddAdminModal(true);
+                    }}
+                  >
+                    <Text style={styles.adminActionText}>👤 Attach Admin</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.statusToggleBtn,
+                      showroom.status === 'ACTIVE'
+                        ? styles.suspendBtn
+                        : styles.activateBtn,
+                    ]}
+                    onPress={() => handleToggleStatus(showroom)}
+                  >
+                    <Text style={styles.statusToggleText}>
+                      {showroom.status === 'ACTIVE' ? 'Suspend' : 'Activate'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
-
-              <Text style={styles.addressText}>📍 {showroom.address}</Text>
-              <Text style={styles.contactText}>
-                📞 {showroom.contact_phone} • ✉️ {showroom.contact_email}
-              </Text>
-
-              {/* Action Buttons Row */}
-              <View style={styles.cardActionsRow}>
-                <TouchableOpacity
-                  style={styles.adminActionBtn}
-                  onPress={() => {
-                    setSelectedShowroomForAdmin(showroom);
-                    setShowAddAdminModal(true);
-                  }}
-                >
-                  <Text style={styles.adminActionText}>👤 Attach Admin</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.statusToggleBtn,
-                    showroom.status === 'ACTIVE'
-                      ? styles.suspendBtn
-                      : styles.activateBtn,
-                  ]}
-                  onPress={() => handleToggleStatus(showroom)}
-                >
-                  <Text style={styles.statusToggleText}>
-                    {showroom.status === 'ACTIVE' ? 'Suspend' : 'Activate'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))
+            ))
         )}
+
+        {/* 📜 Platform Audit Logs Stream */}
+        <View style={styles.auditSection}>
+          <Text style={styles.sectionTitle}>📜 Platform Activity & Audit Stream</Text>
+          <Text style={styles.auditSubtitle}>Real-time system events across all showroom nodes.</Text>
+
+          {auditLogs.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyText}>No recent audit logs recorded.</Text>
+            </View>
+          ) : (
+            auditLogs.map((log) => (
+              <View key={log.id} style={styles.auditRow}>
+                <View style={styles.auditBadge}>
+                  <Text style={styles.auditBadgeText}>{log.actor_role}</Text>
+                </View>
+                <View style={styles.auditMetaCol}>
+                  <Text style={styles.auditActionText}>{log.action}</Text>
+                  <Text style={styles.auditDetailsText}>
+                    By {log.actor_name} • {log.showroom_name}
+                  </Text>
+                </View>
+                <Text style={styles.auditTimeText}>
+                  {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              </View>
+            ))
+          )}
+        </View>
+
 
         <Button
           title="Sign Out"
@@ -518,4 +580,84 @@ const styles = StyleSheet.create({
   modalSubmitBtn: {
     marginVertical: 10,
   },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  filterChip: {
+    backgroundColor: '#0f172a',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  filterChipActive: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
+  },
+  filterChipText: {
+    color: '#64748b',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  filterChipTextActive: {
+    color: '#ffffff',
+  },
+  auditSection: {
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  auditSubtitle: {
+    color: '#94a3b8',
+    fontSize: 12,
+    marginBottom: 12,
+  },
+  auditRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0f172a',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  auditBadge: {
+    backgroundColor: '#1e293b',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginRight: 10,
+  },
+  auditBadgeText: {
+    color: '#38bdf8',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  auditMetaCol: {
+    flex: 1,
+  },
+  auditActionText: {
+    color: '#f8fafc',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  auditDetailsText: {
+    color: '#94a3b8',
+    fontSize: 11,
+    marginTop: 1,
+  },
+  auditTimeText: {
+    color: '#64748b',
+    fontSize: 11,
+    fontWeight: '600',
+  },
 });
+
