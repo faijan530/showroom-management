@@ -17,6 +17,7 @@ const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.82, 320);
 export type CustomerRouteName =
   | 'dashboard'
   | 'garage'
+  | 'services'
   | 'service_tracker'
   | 'inquiries'
   | 'vehicles'
@@ -145,6 +146,7 @@ export const CustomerDrawer: React.FC<CustomerDrawerProps> = ({
             {renderNavItem('inquiries', 'Inquiries & Test Rides', 'chatbubbles-outline')}
 
             <Text style={styles.sectionHeader}>SHOWROOM CATALOG</Text>
+            {renderNavItem('services', 'Service Packages & Maintenance', 'sparkles-outline')}
             {renderNavItem('vehicles', 'Vehicle Marketplace', 'bicycle-outline')}
             {renderNavItem('spare_parts', 'Spare Parts Catalog', 'cube-outline')}
 

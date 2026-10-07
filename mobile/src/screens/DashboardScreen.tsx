@@ -11,13 +11,16 @@ import {
   createServiceJob,
   createCustomerServiceRequest,
   getCustomerServiceRequests,
+  getCustomerServiceCatalog,
   ServiceJobItem,
+  ServicePackage,
 } from '../lib/services-api';
 import { getPublicShowrooms } from '../lib/showrooms-api';
 import { Showroom } from '../types/showroom';
 import { CustomerDrawer, CustomerRouteName } from '../components/navigation/CustomerDrawer';
 import { CustomerBottomBar } from '../components/navigation/CustomerBottomBar';
 import { CustomerGarageScreen } from './CustomerGarageScreen';
+import { CustomerServicesScreen } from './CustomerServicesScreen';
 import { CustomerEnquiriesScreen } from './CustomerEnquiriesScreen';
 import { CustomerServiceTrackerScreen } from './CustomerServiceTrackerScreen';
 import { VehiclesScreen } from './VehiclesScreen';
@@ -43,6 +46,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [enquiries, setEnquiries] = useState<EnquiryItem[]>([]);
   const [serviceJobs, setServiceJobs] = useState<ServiceJobItem[]>([]);
   const [showrooms, setShowrooms] = useState<Showroom[]>([]);
+  const [packages, setPackages] = useState<ServicePackage[]>([]);
+  const [selectedPackage, setSelectedPackage] = useState<ServicePackage | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Service Booking Modal state
@@ -75,14 +80,16 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
   const fetchCustomerData = async () => {
     try {
-      const [enquiryData, jobsData, showroomsData] = await Promise.all([
+      const [enquiryData, jobsData, showroomsData, catalogData] = await Promise.all([
         getCustomerEnquiries().catch(() => []),
         getCustomerServiceRequests().catch(() => getServiceJobs().catch(() => [])),
         getPublicShowrooms().catch(() => []),
+        getCustomerServiceCatalog().catch(() => []),
       ]);
       setEnquiries(enquiryData);
       setServiceJobs(jobsData);
       setShowrooms(showroomsData);
+      setPackages(catalogData);
       if (showroomsData.length > 0 && !selectedShowroomId) {
         setSelectedShowroomId(showroomsData[0].id);
       }
@@ -90,6 +97,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       setEnquiries([]);
       setServiceJobs([]);
       setShowrooms([]);
+      setPackages([]);
     } finally {
       setLoading(false);
     }
@@ -153,6 +161,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       setShowServiceModal(false);
       setVehicleDetails('');
       setServiceDesc('');
+      setSelectedPackage(null);
       setCustomTime('');
       setIsCustomTime(false);
       await fetchCustomerData();
@@ -176,6 +185,19 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
   const renderCurrentView = () => {
     switch (currentRoute) {
+      case 'services':
+        return (
+          <CustomerServicesScreen
+            onBack={() => setCurrentRoute('dashboard')}
+            onSelectPackage={(pkg) => {
+              setSelectedPackage(pkg);
+              setVehicleType(pkg.vehicle_type === 'CAR' ? 'CAR' : 'BIKE');
+              setServiceDesc(`Booking Package: ${pkg.title} (Est. Duration: ${pkg.duration})`);
+              setShowServiceModal(true);
+              setCurrentRoute('dashboard');
+            }}
+          />
+        );
       case 'garage':
         return (
           <CustomerGarageScreen
@@ -268,15 +290,50 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               </TouchableOpacity>
             </View>
 
-            {/* Quick Action Grid (3-Column) */}
+            {/* Service Packages Hero Promo Banner */}
+            <TouchableOpacity
+              style={styles.packageBannerCard}
+              onPress={() => setCurrentRoute('services')}
+              activeOpacity={0.85}
+            >
+              <View style={styles.packageBannerLeft}>
+                <View style={styles.packageBannerIconWrap}>
+                  <Ionicons name="sparkles" size={20} color="#38bdf8" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <Text style={styles.packageBannerTitle}>Certified Service Packages</Text>
+                    <View style={styles.packageBadgeLive}>
+                      <Ionicons name="time" size={10} color="#38bdf8" />
+                      <Text style={styles.packageBadgeLiveText}>Live Turnaround Duration</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.packageBannerSub}>
+                    Browse certified maintenance packages with turnaround duration & fixed pricing
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#38bdf8" />
+            </TouchableOpacity>
+
+            {/* Quick Action Grid */}
             <View style={styles.quickGrid}>
               <TouchableOpacity
                 style={[styles.quickCard, styles.primaryQuickCard]}
                 onPress={() => setShowServiceModal(true)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="calendar" size={22} color="#ffffff" />
+                <Ionicons name="calendar" size={20} color="#ffffff" />
                 <Text style={styles.quickCardTitlePrimary}>Book Service</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.quickCard}
+                onPress={() => setCurrentRoute('services')}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="time-outline" size={20} color="#38bdf8" />
+                <Text style={styles.quickCardTitle}>Packages</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -284,7 +341,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 onPress={() => setCurrentRoute('garage')}
                 activeOpacity={0.8}
               >
-                <Ionicons name="car-sport" size={22} color="#38bdf8" />
+                <Ionicons name="car-sport-outline" size={20} color="#a855f7" />
                 <Text style={styles.quickCardTitle}>My Garage</Text>
               </TouchableOpacity>
 
@@ -293,8 +350,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 onPress={() => setCurrentRoute('vehicles')}
                 activeOpacity={0.8}
               >
-                <Ionicons name="bicycle" size={22} color="#10b981" />
-                <Text style={styles.quickCardTitle}>Marketplace</Text>
+                <Ionicons name="bicycle-outline" size={20} color="#10b981" />
+                <Text style={styles.quickCardTitle}>Market</Text>
               </TouchableOpacity>
             </View>
 
@@ -506,6 +563,105 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 </View>
               ) : null}
 
+              {/* Service Package Selector with Turnaround Duration */}
+              {packages.length > 0 ? (
+                <View style={{ marginBottom: 14 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <Text style={styles.fieldSectionLabel}>Choose Maintenance Package:</Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setShowServiceModal(false);
+                        setCurrentRoute('services');
+                      }}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text style={styles.viewCatalogLink}>Full Catalog ›</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
+                  >
+                    {/* Custom / General repair chip */}
+                    <TouchableOpacity
+                      style={[
+                        styles.pkgCardChip,
+                        selectedPackage === null && styles.pkgCardChipActive,
+                      ]}
+                      onPress={() => setSelectedPackage(null)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.pkgCardChipTitle,
+                          selectedPackage === null && styles.pkgCardChipTitleActive,
+                        ]}
+                      >
+                        Custom / General Issue
+                      </Text>
+                      <Text style={styles.pkgCardChipSubtitle}>On-demand diagnostics</Text>
+                    </TouchableOpacity>
+
+                    {packages.map((pkg) => {
+                      const isSelected = selectedPackage?.id === pkg.id;
+                      return (
+                        <TouchableOpacity
+                          key={pkg.id}
+                          style={[
+                            styles.pkgCardChip,
+                            isSelected && styles.pkgCardChipActive,
+                          ]}
+                          onPress={() => {
+                            setSelectedPackage(pkg);
+                            setVehicleType(pkg.vehicle_type === 'CAR' ? 'CAR' : 'BIKE');
+                            setServiceDesc(`Package: ${pkg.title} (Est. Duration: ${pkg.duration})`);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                            <Text
+                              style={[
+                                styles.pkgCardChipTitle,
+                                isSelected && styles.pkgCardChipTitleActive,
+                              ]}
+                              numberOfLines={1}
+                            >
+                              {pkg.title}
+                            </Text>
+                            <Text style={styles.pkgCardPrice}>₹{pkg.price}</Text>
+                          </View>
+                          {/* Turnaround Duration Pill */}
+                          <View style={styles.pkgDurationPill}>
+                            <Ionicons name="time" size={11} color="#38bdf8" />
+                            <Text style={styles.pkgDurationPillText}>{pkg.duration}</Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              ) : null}
+
+              {/* Active Package Estimated Turnaround Banner */}
+              {selectedPackage ? (
+                <View style={styles.packageBannerSelected}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View style={styles.packageBannerIcon}>
+                      <Ionicons name="time" size={20} color="#38bdf8" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.packageBannerTitleSelected}>{selectedPackage.title}</Text>
+                      <Text style={styles.packageBannerSubSelected}>
+                        Estimated Turnaround Time: <Text style={{ color: '#38bdf8', fontWeight: '800' }}>{selectedPackage.duration}</Text>
+                      </Text>
+                    </View>
+                    <Text style={styles.packageBannerPriceSelected}>₹{selectedPackage.price}</Text>
+                  </View>
+                </View>
+              ) : null}
+
               {/* Vehicle Type */}
               <Text style={styles.fieldSectionLabel}>Vehicle Type:</Text>
               <View style={styles.typeSelectorRow}>
@@ -626,7 +782,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                   {/* Manual / Custom Time Button */}
                   <TouchableOpacity
                     style={[styles.slotChip, isCustomTime && styles.slotChipActive]}
-                    onPress={() => setIsCustomTime(true)}
+                    onPress={() => {
+                      setIsCustomTime(true);
+                      if (!customTime) setCustomTime('10:30 AM');
+                    }}
                     activeOpacity={0.7}
                   >
                     <Ionicons
@@ -635,20 +794,33 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                       color={isCustomTime ? '#3b82f6' : '#94a3b8'}
                     />
                     <Text style={[styles.slotChipText, isCustomTime && styles.slotChipTextActive]}>
-                      ⏱️ Custom / Manual Time
+                      ✏️ Custom Time
                     </Text>
                   </TouchableOpacity>
                 </View>
 
                 {/* Custom Manual Time Input */}
                 {isCustomTime ? (
-                  <Input
-                    label="Enter Manual Booking Time *"
-                    placeholder="e.g. 10:30 AM or 03:15 PM"
-                    value={customTime}
-                    onChangeText={setCustomTime}
-                  />
+                  <View style={{ marginTop: 4, marginBottom: 8 }}>
+                    <Input
+                      label="Specify Custom Preferred Time (e.g. 10:30 AM, 04:15 PM) *"
+                      placeholder="e.g. 10:30 AM"
+                      value={customTime}
+                      onChangeText={setCustomTime}
+                    />
+                  </View>
                 ) : null}
+
+                {/* Live Appointment Time Display Indicator */}
+                <View style={styles.activeTimeSlotDisplay}>
+                  <Ionicons name="time" size={14} color="#f59e0b" />
+                  <Text style={styles.activeTimeSlotDisplayText}>
+                    Appointment Time: <Text style={{ color: '#fbbf24', fontWeight: '800' }}>
+                      {isCustomTime ? (customTime.trim() || 'Enter manual time above') : timeSlot}
+                    </Text>
+                    {isCustomTime ? ' (Custom Manual Time)' : ''}
+                  </Text>
+                </View>
               </View>
 
               <Input
@@ -659,6 +831,36 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 multiline
                 numberOfLines={3}
               />
+
+              {/* Review & Confirm Summary Card */}
+              <View style={styles.bookingSummaryCard}>
+                <View style={styles.summaryHeader}>
+                  <Ionicons name="checkmark-circle-outline" size={16} color="#10b981" />
+                  <Text style={styles.summaryHeaderTitle}>Appointment Overview</Text>
+                </View>
+                <View style={styles.summaryDetails}>
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Scheduled Time:</Text>
+                    <Text style={styles.summaryValueHighlight}>
+                      📅 {preferredDate} • ⏰ {isCustomTime ? (customTime.trim() || 'Manual') : timeSlot}
+                    </Text>
+                  </View>
+                  {selectedPackage ? (
+                    <View style={styles.summaryRow}>
+                      <Text style={styles.summaryLabel}>Turnaround Time:</Text>
+                      <Text style={styles.summaryValueTurnaround}>
+                        ⏱️ {selectedPackage.duration} ({selectedPackage.title})
+                      </Text>
+                    </View>
+                  ) : null}
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Vehicle:</Text>
+                    <Text style={styles.summaryValue}>
+                      {vehicleDetails ? vehicleDetails : 'Pending vehicle details'} ({vehicleType})
+                    </Text>
+                  </View>
+                </View>
+              </View>
             </ScrollView>
 
             <View style={styles.modalActions}>
@@ -670,7 +872,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               <Button
                 title="Cancel"
                 variant="secondary"
-                onPress={() => setShowServiceModal(false)}
+                onPress={() => {
+                  setShowServiceModal(false);
+                  setSelectedPackage(null);
+                }}
               />
             </View>
           </View>
@@ -1057,6 +1262,209 @@ const styles = StyleSheet.create({
   },
   slotChipTextActive: {
     color: '#38bdf8',
+    fontWeight: '800',
+  },
+  packageBannerCard: {
+    backgroundColor: '#0f172a',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.3)',
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  packageBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  packageBannerIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  packageBannerTitle: {
+    color: '#f8fafc',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  packageBadgeLive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.3)',
+  },
+  packageBadgeLiveText: {
+    color: '#38bdf8',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  packageBannerSub: {
+    color: '#94a3b8',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  viewCatalogLink: {
+    color: '#38bdf8',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  pkgCardChip: {
+    backgroundColor: '#1e293b',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#334155',
+    minWidth: 160,
+  },
+  pkgCardChipActive: {
+    backgroundColor: 'rgba(59, 130, 246, 0.18)',
+    borderColor: '#3b82f6',
+  },
+  pkgCardChipTitle: {
+    color: '#94a3b8',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  pkgCardChipTitleActive: {
+    color: '#f8fafc',
+    fontWeight: '800',
+  },
+  pkgCardChipSubtitle: {
+    color: '#64748b',
+    fontSize: 10,
+    marginTop: 4,
+  },
+  pkgCardPrice: {
+    color: '#10b981',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  pkgDurationPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginTop: 6,
+    alignSelf: 'flex-start',
+  },
+  pkgDurationPillText: {
+    color: '#38bdf8',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  packageBannerSelected: {
+    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.3)',
+    marginBottom: 14,
+  },
+  packageBannerIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  packageBannerTitleSelected: {
+    color: '#f8fafc',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  packageBannerSubSelected: {
+    color: '#94a3b8',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  packageBannerPriceSelected: {
+    color: '#10b981',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  activeTimeSlotDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.25)',
+    marginTop: 4,
+  },
+  activeTimeSlotDisplayText: {
+    color: '#cbd5e1',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  bookingSummaryCard: {
+    backgroundColor: '#1e293b',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#334155',
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  summaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+    paddingBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#334155',
+  },
+  summaryHeaderTitle: {
+    color: '#f8fafc',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  summaryDetails: {
+    gap: 6,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  summaryLabel: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  summaryValue: {
+    color: '#e2e8f0',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  summaryValueHighlight: {
+    color: '#38bdf8',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  summaryValueTurnaround: {
+    color: '#10b981',
+    fontSize: 11,
     fontWeight: '800',
   },
 });

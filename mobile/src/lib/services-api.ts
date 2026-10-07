@@ -86,3 +86,19 @@ export async function getCustomerServiceRequests(): Promise<ServiceJobItem[]> {
   return response.data.data.service_requests || [];
 }
 
+export interface ServicePackage {
+  id: string;
+  title: string;
+  vehicle_type: string;
+  price: number;
+  duration: string;
+  features: string[];
+  description: string;
+}
+
+export async function getCustomerServiceCatalog(): Promise<ServicePackage[]> {
+  const response = await apiClient.get('/customer/services');
+  return response.data.data.services || [];
+}
+
+
