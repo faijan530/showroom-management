@@ -20,6 +20,8 @@ import {
 } from '../lib/customer-garage-api';
 import { getServiceJobs, ServiceJobItem } from '../lib/services-api';
 
+import { submitServiceFeedback } from '../lib/feedback-api';
+
 interface CustomerGarageScreenProps {
   onBack?: () => void;
   onBookServiceForVehicle?: (vehicleDetails: string, type: 'BIKE' | 'CAR') => void;
@@ -43,6 +45,33 @@ export const CustomerGarageScreen: React.FC<CustomerGarageScreenProps> = ({
   const [year, setYear] = useState('2024');
   const [regNumber, setRegNumber] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Star Rating Modal state
+  const [selectedRatingJob, setSelectedRatingJob] = useState<ServiceJobItem | null>(null);
+  const [starRating, setStarRating] = useState<number>(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+
+  const handleSubmitReview = async () => {
+    if (!selectedRatingJob) return;
+    try {
+      setIsSubmittingRating(true);
+      await submitServiceFeedback({
+        service_job_id: selectedRatingJob.id,
+        rating: starRating,
+        comment: reviewComment.trim() || undefined,
+      });
+
+      Alert.alert('Thank You!', 'Your feedback and star rating have been submitted to the dealership!');
+      setSelectedRatingJob(null);
+      setReviewComment('');
+      setStarRating(5);
+    } catch (err: any) {
+      Alert.alert('Submission Error', err.message || 'Failed to submit review.');
+    } finally {
+      setIsSubmittingRating(false);
+    }
+  };
 
   const fetchGarageData = async () => {
     try {
@@ -220,6 +249,24 @@ export const CustomerGarageScreen: React.FC<CustomerGarageScreenProps> = ({
                   <Text style={styles.historyTech}>Technician: {job.assigned_worker_name}</Text>
                 ) : null}
               </View>
+
+              {job.status === 'COMPLETED' ? (
+                <TouchableOpacity
+                  style={{
+                    marginTop: 10,
+                    paddingTop: 8,
+                    borderTopWidth: 1,
+                    borderTopColor: '#1e293b',
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                  onPress={() => setSelectedRatingJob(job)}
+                >
+                  <Text style={{ color: '#f59e0b', fontSize: 12, fontWeight: '700' }}>⭐ Rate Service Experience</Text>
+                  <Text style={{ color: '#38bdf8', fontSize: 11 }}>Submit Review →</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           ))
         )}
@@ -288,6 +335,57 @@ export const CustomerGarageScreen: React.FC<CustomerGarageScreenProps> = ({
                 title="Cancel"
                 variant="secondary"
                 onPress={() => setShowAddModal(false)}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal: Service Rating & Review */}
+      <Modal visible={selectedRatingJob !== null} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Rate Your Service Experience</Text>
+            <Text style={styles.modalSubtitle}>
+              Service Job for {selectedRatingJob?.vehicle_details}
+            </Text>
+
+            {/* Star Rating Buttons */}
+            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, marginVertical: 16 }}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => setStarRating(star)}
+                  style={{ padding: 6 }}
+                >
+                  <Text style={{ fontSize: 32, opacity: star <= starRating ? 1 : 0.25 }}>⭐</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={{ color: '#f59e0b', textAlign: 'center', fontSize: 14, fontWeight: '700', marginBottom: 16 }}>
+              {starRating} out of 5 Stars
+            </Text>
+
+            <Input
+              label="Review Comments (Optional)"
+              placeholder="Share your experience regarding repair quality, promptness, or technician service..."
+              value={reviewComment}
+              onChangeText={setReviewComment}
+              multiline
+              numberOfLines={3}
+            />
+
+            <View style={styles.modalActions}>
+              <Button
+                title="Submit Star Review"
+                onPress={handleSubmitReview}
+                isLoading={isSubmittingRating}
+              />
+              <Button
+                title="Cancel"
+                variant="secondary"
+                onPress={() => setSelectedRatingJob(null)}
               />
             </View>
           </View>

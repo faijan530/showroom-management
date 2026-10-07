@@ -16,6 +16,8 @@ import { useAuthStore } from '../store/auth.store';
 import { getStaffMembers, createStaffMember, StaffMember } from '../lib/staff-api';
 import { getServiceJobs, updateServiceJob, ServiceJobItem } from '../lib/services-api';
 
+import { getAdminShowroomFeedbacks, respondToFeedback, FeedbackItem } from '../lib/feedback-api';
+
 interface AdminDashboardScreenProps {
   onNavigateToVehicles?: () => void;
   onNavigateToSpareParts?: () => void;
@@ -29,12 +31,18 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
 
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [serviceJobs, setServiceJobs] = useState<ServiceJobItem[]>([]);
+  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
 
   // Assign Worker Modal
   const [selectedJob, setSelectedJob] = useState<ServiceJobItem | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
+
+  // Response Modal
+  const [selectedFeedback, setSelectedFeedback] = useState<FeedbackItem | null>(null);
+  const [responseText, setResponseText] = useState('');
+  const [isResponding, setIsResponding] = useState(false);
 
   // Form States
   const [fullName, setFullName] = useState('');
@@ -46,15 +54,18 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
 
   const fetchAdminData = async () => {
     try {
-      const [staffData, jobsData] = await Promise.all([
+      const [staffData, jobsData, feedbackData] = await Promise.all([
         getStaffMembers().catch(() => []),
         getServiceJobs().catch(() => []),
+        getAdminShowroomFeedbacks().catch(() => []),
       ]);
       setStaff(staffData);
       setServiceJobs(jobsData);
+      setFeedbacks(feedbackData);
     } catch {
       setStaff([]);
       setServiceJobs([]);
+      setFeedbacks([]);
     } finally {
       setLoading(false);
     }
@@ -116,6 +127,29 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
       Alert.alert('Assignment Failed', err.message || 'Failed to assign technician.');
     } finally {
       setIsAssigning(false);
+    }
+  };
+
+  const handleSendFeedbackResponse = async () => {
+    if (!selectedFeedback || !responseText.trim()) {
+      Alert.alert('Validation Error', 'Please enter a response message.');
+      return;
+    }
+    try {
+      setIsResponding(true);
+      await respondToFeedback(selectedFeedback.id, {
+        admin_response: responseText.trim(),
+        status: 'APPROVED',
+      });
+
+      Alert.alert('Response Sent', 'Official dealer response published successfully!');
+      setSelectedFeedback(null);
+      setResponseText('');
+      fetchAdminData();
+    } catch (err: any) {
+      Alert.alert('Response Error', err.message || 'Failed to submit response.');
+    } finally {
+      setIsResponding(false);
     }
   };
 
@@ -184,6 +218,51 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
             <Text style={styles.shortcutTitle}>Provision Staff</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Customer Service Ratings & Reviews Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Customer Service Ratings & Reviews</Text>
+        </View>
+
+        {feedbacks.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyText}>No customer service reviews submitted yet.</Text>
+          </View>
+        ) : (
+          feedbacks.map((fb) => (
+            <View key={fb.id} style={styles.staffCard}>
+              <View style={styles.staffHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.staffName}>{fb.customer_name || 'Customer'}</Text>
+                  <Text style={{ color: '#f59e0b', fontSize: 13, fontWeight: '700', marginTop: 2 }}>
+                    {'⭐'.repeat(fb.rating)} ({fb.rating}/5 Stars)
+                  </Text>
+                  <Text style={{ color: '#38bdf8', fontSize: 12, marginTop: 2 }}>Vehicle: {fb.vehicle_details || 'Serviced Vehicle'}</Text>
+                  {fb.comment ? (
+                    <Text style={{ color: '#cbd5e1', fontSize: 12, marginTop: 4, fontStyle: 'italic' }}>"{fb.comment}"</Text>
+                  ) : null}
+                </View>
+                <View style={[styles.roleBadge, { backgroundColor: fb.status === 'APPROVED' ? '#10b981' : '#f59e0b' }]}>
+                  <Text style={styles.roleText}>{fb.status}</Text>
+                </View>
+              </View>
+
+              {fb.admin_response ? (
+                <View style={{ marginTop: 8, padding: 8, backgroundColor: '#1e293b', borderRadius: 6 }}>
+                  <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700' }}>Official Response:</Text>
+                  <Text style={{ color: '#f1f5f9', fontSize: 12, marginTop: 2 }}>{fb.admin_response}</Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={{ marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#1e293b', alignItems: 'flex-end' }}
+                  onPress={() => setSelectedFeedback(fb)}
+                >
+                  <Text style={{ color: '#8b5cf6', fontSize: 12, fontWeight: '700' }}>✍️ Respond to Review →</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ))
+        )}
 
         {/* Service Jobs Dispatch Section */}
         <View style={styles.sectionHeader}>
@@ -384,6 +463,45 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
               onPress={() => setSelectedJob(null)}
               style={{ marginTop: 12 }}
             />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal: Admin Response to Customer Feedback */}
+      <Modal
+        visible={selectedFeedback !== null}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setSelectedFeedback(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Official Dealer Response</Text>
+            <Text style={{ color: '#94a3b8', fontSize: 13, marginBottom: 14 }}>
+              Respond to customer review by {selectedFeedback?.customer_name || 'Customer'} ({'⭐'.repeat(selectedFeedback?.rating || 5)})
+            </Text>
+
+            <Input
+              label="Official Dealership Response *"
+              placeholder="Thank the customer or address their service feedback..."
+              value={responseText}
+              onChangeText={setResponseText}
+              multiline
+              numberOfLines={4}
+            />
+
+            <View style={{ gap: 10, marginTop: 12 }}>
+              <Button
+                title="Publish Response & Approve"
+                onPress={handleSendFeedbackResponse}
+                isLoading={isResponding}
+              />
+              <Button
+                title="Cancel"
+                variant="secondary"
+                onPress={() => setSelectedFeedback(null)}
+              />
+            </View>
           </View>
         </View>
       </Modal>
