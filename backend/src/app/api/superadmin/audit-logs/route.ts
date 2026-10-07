@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
       orderBy: { updatedAt: 'desc' },
       include: {
         showroom: { select: { name: true } },
-        worker: { select: { fullName: true } },
+        assignedWorker: { select: { fullName: true } },
       },
     });
 
@@ -61,8 +61,8 @@ export async function GET(req: NextRequest) {
         id: `sj-${j.id}`,
         action: `SERVICE_JOB_${j.status}`,
         entity: 'ServiceJob',
-        actor_name: j.worker?.fullName || j.customerName,
-        actor_role: j.worker ? 'WORKER' : 'CUSTOMER',
+        actor_name: j.assignedWorker?.fullName || j.customerName,
+        actor_role: j.assignedWorker ? 'WORKER' : 'CUSTOMER',
         showroom_name: j.showroom.name,
         created_at: j.updatedAt,
       })),
