@@ -9,6 +9,7 @@ import {
   Alert,
   Modal,
   Image,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeScreen } from '../components/ui/SafeScreen';
@@ -18,63 +19,89 @@ import { useAuthStore } from '../store/auth.store';
 import { getStaffMembers, createStaffMember, StaffMember } from '../lib/staff-api';
 import { getServiceJobs, updateServiceJob, ServiceJobItem } from '../lib/services-api';
 import { getAdminShowroomFeedbacks, respondToFeedback, FeedbackItem } from '../lib/feedback-api';
+import { getSpareParts } from '../lib/spare-parts-api';
+import { SparePart } from '../types/spare-part';
+
+// Dedicated Navigation & Sub-screens
+import { AdminDrawer, AdminRouteName } from '../components/navigation/AdminDrawer';
+import { AdminBottomBar } from '../components/navigation/AdminBottomBar';
+import { AdminServiceJobsScreen } from './AdminServiceJobsScreen';
+import { AdminReviewsScreen } from './AdminReviewsScreen';
+import { AdminStaffScreen } from './AdminStaffScreen';
+import { AdminReportsScreen } from './AdminReportsScreen';
+import { AdminProfileScreen } from './AdminProfileScreen';
+import { VehiclesScreen } from './VehiclesScreen';
+import { SparePartsScreen } from './SparePartsScreen';
 
 interface AdminDashboardScreenProps {
   onNavigateToVehicles?: () => void;
   onNavigateToSpareParts?: () => void;
 }
 
-export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
-  onNavigateToVehicles,
-  onNavigateToSpareParts,
-}) => {
+export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = () => {
   const { user, logout } = useAuthStore();
 
+  // Active Screen / Navigation State
+  const [currentRoute, setCurrentRoute] = useState<AdminRouteName>('dashboard');
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Data Store States
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [serviceJobs, setServiceJobs] = useState<ServiceJobItem[]>([]);
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
+  const [spareParts, setSpareParts] = useState<SparePart[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Assign Worker Modal
-  const [selectedJob, setSelectedJob] = useState<ServiceJobItem | null>(null);
-  const [isAssigning, setIsAssigning] = useState(false);
-
-  // Response Modal
-  const [selectedFeedback, setSelectedFeedback] = useState<FeedbackItem | null>(null);
-  const [responseText, setResponseText] = useState('');
-  const [isResponding, setIsResponding] = useState(false);
-
-  // Form States
+  // Provision Staff Modal State
+  const [showAddStaffModal, setShowAddStaffModal] = useState(false);
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'WORKER' | 'INVENTORY_MANAGER'>('WORKER');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmittingStaff, setIsSubmittingStaff] = useState(false);
+
+  // Assign Worker Modal State
+  const [selectedJob, setSelectedJob] = useState<ServiceJobItem | null>(null);
+  const [isAssigning, setIsAssigning] = useState(false);
+
+  // Response Modal State
+  const [selectedFeedback, setSelectedFeedback] = useState<FeedbackItem | null>(null);
+  const [responseText, setResponseText] = useState('');
+  const [isResponding, setIsResponding] = useState(false);
 
   const fetchAdminData = async () => {
     try {
-      const [staffData, jobsData, feedbackData] = await Promise.all([
+      const [staffData, jobsData, feedbackData, partsData] = await Promise.all([
         getStaffMembers().catch(() => []),
         getServiceJobs().catch(() => []),
         getAdminShowroomFeedbacks().catch(() => []),
+        getSpareParts({ showroom_id: user?.showroom_id || undefined }).catch(() => []),
       ]);
       setStaff(staffData);
       setServiceJobs(jobsData);
       setFeedbacks(feedbackData);
+      setSpareParts(partsData);
     } catch {
       setStaff([]);
       setServiceJobs([]);
       setFeedbacks([]);
+      setSpareParts([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchAdminData();
   }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchAdminData();
+  };
 
   const handleCreateStaff = async () => {
     if (!fullName.trim() || !phone || !password) {
@@ -88,7 +115,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
       return;
     }
 
-    setIsSubmitting(true);
+    setIsSubmittingStaff(true);
     try {
       await createStaffMember({
         full_name: fullName.trim(),
@@ -99,7 +126,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
       });
 
       Alert.alert('Success', `Provisioned ${fullName} as ${role === 'WORKER' ? 'Technician' : 'Inventory Manager'}!`);
-      setShowModal(false);
+      setShowAddStaffModal(false);
       setFullName('');
       setPhone('');
       setEmail('');
@@ -108,7 +135,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
     } catch (err: any) {
       Alert.alert('Failed', err.message || 'Could not provision staff member');
     } finally {
-      setIsSubmitting(false);
+      setIsSubmittingStaff(false);
     }
   };
 
@@ -155,240 +182,306 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
   };
 
   const showroomTitle = user?.showroom_name || user?.showroom?.name || 'Dealership Branch';
-  const showroomCode = user?.showroom_code || user?.showroom?.code || 'SHW-01';
+  const showroomCode = user?.showroom_code || user?.showroom?.code || (user?.showroom_id ? user.showroom_id.slice(0, 6).toUpperCase() : 'SHW-01');
 
   const workerCount = staff.filter((s) => s.role === 'WORKER').length;
-  const inventoryCount = staff.filter((s) => s.role === 'INVENTORY_MANAGER').length;
   const workersList = staff.filter((s) => s.role === 'WORKER');
 
-  return (
-    <SafeScreen>
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* Brand Bar Header */}
-        <View style={styles.brandHeaderBar}>
-          <View style={styles.brandTitleGroup}>
-            <Image
-              source={require('../../assets/logo.png')}
-              style={styles.headerLogoIcon}
-              resizeMode="contain"
-            />
-            <View>
-              <Text style={styles.badge}>MOTOHUB SHOWROOM ADMIN</Text>
-              <Text style={styles.title}>Dealership Control</Text>
-            </View>
-          </View>
-          <TouchableOpacity onPress={logout} style={styles.headerLogoutBtn}>
-            <Ionicons name="log-out-outline" size={22} color="#f43f5e" />
-          </TouchableOpacity>
-        </View>
+  // Activity feed items combining real latest data
+  const activityItems = [
+    ...serviceJobs.slice(0, 2).map((j) => ({
+      id: `job-${j.id}`,
+      type: 'JOB',
+      icon: 'construct' as const,
+      color: '#a855f7',
+      title: 'New service job assigned',
+      subtitle: `#SJ-${j.id.slice(0, 4)} • ${j.vehicle_details || j.vehicle_type}`,
+      targetRoute: 'service_jobs' as AdminRouteName,
+    })),
+    ...spareParts.filter((p) => p.stock_quantity <= p.min_stock_alert).slice(0, 1).map((p) => ({
+      id: `part-${p.id}`,
+      type: 'ALERT',
+      icon: 'cube' as const,
+      color: '#f59e0b',
+      title: `Stock alert: ${p.part_name}`,
+      subtitle: `${p.stock_quantity} items left • Low Stock`,
+      targetRoute: 'spare_parts' as AdminRouteName,
+    })),
+    ...feedbacks.slice(0, 2).map((f) => ({
+      id: `review-${f.id}`,
+      type: 'REVIEW',
+      icon: 'star' as const,
+      color: '#eab308',
+      title: 'New customer review received',
+      subtitle: `${f.rating}/5 Stars • ${f.customer_name || 'Customer'}`,
+      targetRoute: 'customer_reviews' as AdminRouteName,
+    })),
+  ];
 
-        {/* Showroom Profile Banner Card */}
-        <View style={styles.showroomCard}>
-          <Image
-            source={require('../../assets/hero_banner.jpg')}
-            style={styles.bannerImage}
-            resizeMode="cover"
+  // Helper to render body based on active route
+  const renderCurrentView = () => {
+    switch (currentRoute) {
+      case 'service_jobs':
+      case 'worker_dispatch':
+        return (
+          <AdminServiceJobsScreen
+            serviceJobs={serviceJobs}
+            staff={staff}
+            onRefresh={fetchAdminData}
+            onAssignTechnician={(job) => setSelectedJob(job)}
           />
-          <View style={styles.bannerOverlay}>
-            <Text style={styles.cardLabel}>ASSIGNED SHOWROOM SCOPE</Text>
-            <Text style={styles.showroomName}>{showroomTitle}</Text>
-            <Text style={styles.showroomCode}>Dealer Branch Code: {showroomCode}</Text>
-          </View>
-        </View>
-
-        {/* Staff & Operations Executive Stats */}
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Ionicons name="people" size={20} color="#3b82f6" style={{ marginBottom: 4 }} />
-            <Text style={styles.statNumber}>{workerCount}</Text>
-            <Text style={styles.statLabel}>Technicians</Text>
-          </View>
-
-          <View style={styles.statCard}>
-            <Ionicons name="cube" size={20} color="#06b6d4" style={{ marginBottom: 4 }} />
-            <Text style={[styles.statNumber, styles.inventoryText]}>{inventoryCount}</Text>
-            <Text style={styles.statLabel}>Stock Managers</Text>
-          </View>
-
-          <View style={[styles.statCard, styles.jobsStatCard]}>
-            <Ionicons name="construct" size={20} color="#8b5cf6" style={{ marginBottom: 4 }} />
-            <Text style={[styles.statNumber, styles.jobsStatText]}>{serviceJobs.length}</Text>
-            <Text style={styles.statLabel}>Service Jobs</Text>
-          </View>
-        </View>
-
-        {/* Action Shortcuts with Ionicons */}
-        <View style={styles.shortcutRow}>
-          <TouchableOpacity
-            style={styles.shortcutBtn}
-            onPress={onNavigateToVehicles}
+        );
+      case 'customer_reviews':
+        return (
+          <AdminReviewsScreen
+            feedbacks={feedbacks}
+            onRefresh={fetchAdminData}
+            onRespond={(fb) => setSelectedFeedback(fb)}
+          />
+        );
+      case 'staff_directory':
+        return (
+          <AdminStaffScreen
+            staff={staff}
+            onRefresh={fetchAdminData}
+            onAddStaff={() => setShowAddStaffModal(true)}
+          />
+        );
+      case 'vehicles':
+        return (
+          <VehiclesScreen
+            onSelectVehicle={() => {}}
+            onBack={() => setCurrentRoute('dashboard')}
+          />
+        );
+      case 'spare_parts':
+        return (
+          <SparePartsScreen
+            onSelectPart={() => {}}
+            onBack={() => setCurrentRoute('dashboard')}
+          />
+        );
+      case 'reports':
+        return (
+          <AdminReportsScreen
+            serviceJobs={serviceJobs}
+            feedbacks={feedbacks}
+            staff={staff}
+          />
+        );
+      case 'profile':
+        return <AdminProfileScreen />;
+      case 'dashboard':
+      default:
+        return (
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor="#a855f7"
+              />
+            }
           >
-            <Ionicons name="bicycle" size={24} color="#38bdf8" style={{ marginBottom: 4 }} />
-            <Text style={styles.shortcutTitle}>Vehicles</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.shortcutBtn}
-            onPress={onNavigateToSpareParts}
-          >
-            <Ionicons name="hardware-chip" size={24} color="#10b981" style={{ marginBottom: 4 }} />
-            <Text style={styles.shortcutTitle}>Spare Parts</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.shortcutBtn, styles.addStaffBtn]}
-            onPress={() => setShowModal(true)}
-          >
-            <Ionicons name="person-add" size={24} color="#8b5cf6" style={{ marginBottom: 4 }} />
-            <Text style={styles.shortcutTitle}>Add Staff</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Customer Service Ratings & Reviews Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Customer Service Ratings & Reviews</Text>
-        </View>
-
-        {feedbacks.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No customer service reviews submitted yet.</Text>
-          </View>
-        ) : (
-          feedbacks.map((fb) => (
-            <View key={fb.id} style={styles.staffCard}>
-              <View style={styles.staffHeader}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.staffName}>{fb.customer_name || 'Customer'}</Text>
-                  <Text style={{ color: '#f59e0b', fontSize: 13, fontWeight: '700', marginTop: 2 }}>
-                    {'⭐'.repeat(fb.rating)} ({fb.rating}/5 Stars)
-                  </Text>
-                  <Text style={{ color: '#38bdf8', fontSize: 12, marginTop: 2 }}>Vehicle: {fb.vehicle_details || 'Serviced Vehicle'}</Text>
-                  {fb.comment ? (
-                    <Text style={{ color: '#cbd5e1', fontSize: 12, marginTop: 4, fontStyle: 'italic' }}>"{fb.comment}"</Text>
-                  ) : null}
-                </View>
-                <View style={[styles.roleBadge, { backgroundColor: fb.status === 'APPROVED' ? '#10b981' : '#f59e0b' }]}>
-                  <Text style={styles.roleText}>{fb.status}</Text>
-                </View>
-              </View>
-
-              {fb.admin_response ? (
-                <View style={{ marginTop: 8, padding: 8, backgroundColor: '#1e293b', borderRadius: 6 }}>
-                  <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700' }}>Official Response:</Text>
-                  <Text style={{ color: '#f1f5f9', fontSize: 12, marginTop: 2 }}>{fb.admin_response}</Text>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={{ marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#1e293b', alignItems: 'flex-end' }}
-                  onPress={() => setSelectedFeedback(fb)}
-                >
-                  <Text style={{ color: '#8b5cf6', fontSize: 12, fontWeight: '700' }}>✍️ Respond to Review →</Text>
-                </TouchableOpacity>
-              )}
+            {/* Control Center Subheader Banner */}
+            <View style={styles.dashboardBannerHeader}>
+              <Text style={styles.dashboardTitle}>Dealership Dashboard</Text>
+              <Text style={styles.dashboardSubtitle}>
+                Manage staff credentials, inventory, and service operations for {showroomTitle}.
+              </Text>
             </View>
-          ))
-        )}
 
-        {/* Service Jobs Dispatch Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Service Jobs & Worker Dispatch</Text>
-        </View>
-
-        {serviceJobs.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No service requests logged for this showroom.</Text>
-          </View>
-        ) : (
-          serviceJobs.map((job) => (
-            <View key={job.id} style={styles.staffCard}>
-              <View style={styles.staffHeader}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.staffName}>{job.customer_name}</Text>
-                  <Text style={styles.staffPhone}>📞 {job.customer_phone}</Text>
-                  <Text style={{ color: '#38bdf8', fontSize: 13, marginTop: 2 }}>{job.vehicle_details} ({job.vehicle_type})</Text>
-                  <Text style={{ color: '#cbd5e1', fontSize: 12, marginTop: 4 }}>Issue: {job.service_description}</Text>
-                </View>
-                <View style={[styles.roleBadge, { backgroundColor: job.status === 'COMPLETED' ? '#10b981' : job.status === 'IN_PROGRESS' ? '#f59e0b' : '#3b82f6' }]}>
-                  <Text style={styles.roleText}>{job.status}</Text>
-                </View>
+            {/* Assigned Dealership Scope Card */}
+            <View style={styles.scopeCard}>
+              <View style={styles.scopeLeftCol}>
+                <Text style={styles.scopeLabel}>ASSIGNED DEALERSHIP SCOPE</Text>
+                <Text style={styles.scopeShowroomName}>{showroomTitle}</Text>
+                <Text style={styles.scopeBranchCode}>Branch Code: {showroomCode}</Text>
               </View>
+              <View style={styles.scopeIconBox}>
+                <Ionicons name="business" size={26} color="#a855f7" />
+              </View>
+            </View>
 
-              <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#1e293b', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={{ color: '#94a3b8', fontSize: 12 }}>
-                  {job.assigned_worker_name ? `Technician: ${job.assigned_worker_name}` : 'Unassigned'}
+            {/* Statistics Row */}
+            <View style={styles.statsGrid}>
+              <TouchableOpacity
+                style={styles.statCard}
+                onPress={() => setCurrentRoute('staff_directory')}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="people" size={20} color="#f59e0b" style={{ marginBottom: 6 }} />
+                <Text style={styles.statNumber}>{workerCount}</Text>
+                <Text style={styles.statLabel}>Technicians</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.statCard}
+                onPress={() => setCurrentRoute('spare_parts')}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="cube" size={20} color="#06b6d4" style={{ marginBottom: 6 }} />
+                <Text style={[styles.statNumber, { color: '#06b6d4' }]}>
+                  {spareParts.length}
                 </Text>
-                <TouchableOpacity
-                  style={{ backgroundColor: '#8b5cf6', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}
-                  onPress={() => setSelectedJob(job)}
-                >
-                  <Text style={{ color: '#ffffff', fontSize: 11, fontWeight: '700' }}>
-                    {job.assigned_worker_name ? 'Reassign' : 'Assign Worker'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))
-        )}
+                <Text style={styles.statLabel}>Spare Parts</Text>
+              </TouchableOpacity>
 
-        {/* Staff Directory Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Showroom Staff Directory</Text>
+              <TouchableOpacity
+                style={[styles.statCard, styles.jobsStatCard]}
+                onPress={() => setCurrentRoute('service_jobs')}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="construct" size={20} color="#a855f7" style={{ marginBottom: 6 }} />
+                <Text style={[styles.statNumber, { color: '#a855f7' }]}>
+                  {serviceJobs.length}
+                </Text>
+                <Text style={styles.statLabel}>Service Jobs</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Quick Actions Grid (3-Column) */}
+            <View style={styles.quickActionsGrid}>
+              <TouchableOpacity
+                style={styles.quickActionCard}
+                onPress={() => setCurrentRoute('vehicles')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="bicycle" size={24} color="#f43f5e" />
+                <Text style={styles.quickActionLabel}>Vehicles</Text>
+                <Ionicons name="chevron-forward" size={14} color="#64748b" style={{ marginTop: 2 }} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.quickActionCard}
+                onPress={() => setCurrentRoute('spare_parts')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="settings" size={24} color="#38bdf8" />
+                <Text style={styles.quickActionLabel}>Spare Parts</Text>
+                <Ionicons name="chevron-forward" size={14} color="#64748b" style={{ marginTop: 2 }} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.quickActionCard, styles.addStaffActionCard]}
+                onPress={() => setShowAddStaffModal(true)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="person-add" size={24} color="#a855f7" />
+                <Text style={styles.quickActionLabel}>Add Staff</Text>
+                <Ionicons name="chevron-forward" size={14} color="#a855f7" style={{ marginTop: 2 }} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Recent Activity Section Header */}
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionHeaderTitle}>Recent Activity</Text>
+              <TouchableOpacity
+                onPress={() => setCurrentRoute('service_jobs')}
+                activeOpacity={0.7}
+                style={styles.viewAllBtn}
+              >
+                <Text style={styles.viewAllText}>View All</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Activity Feed Items */}
+            {activityItems.length === 0 ? (
+              <View style={styles.emptyActivityCard}>
+                <Ionicons name="pulse-outline" size={32} color="#475569" style={{ marginBottom: 8 }} />
+                <Text style={styles.emptyActivityTitle}>No recent activity yet</Text>
+                <Text style={styles.emptyActivitySub}>
+                  Showroom operational logs and job updates will appear here.
+                </Text>
+              </View>
+            ) : (
+              activityItems.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.activityCard}
+                  onPress={() => setCurrentRoute(item.targetRoute)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.activityIconBox, { backgroundColor: `${item.color}20` }]}>
+                    <Ionicons name={item.icon} size={20} color={item.color} />
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.activityTitle}>{item.title}</Text>
+                    <Text style={styles.activitySubtitle}>{item.subtitle}</Text>
+                  </View>
+
+                  <Ionicons name="chevron-forward" size={16} color="#475569" />
+                </TouchableOpacity>
+              ))
+            )}
+          </ScrollView>
+        );
+    }
+  };
+
+  return (
+    <SafeScreen style={styles.safeContainer}>
+      {/* Top Header Bar */}
+      <View style={styles.topHeader}>
+        <TouchableOpacity
+          onPress={() => setDrawerOpen(true)}
+          style={styles.headerIconButton}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="menu" size={24} color="#f8fafc" />
+        </TouchableOpacity>
+
+        <View style={styles.headerTitleCenter}>
+          <Ionicons name="settings" size={16} color="#a855f7" style={{ marginRight: 6 }} />
+          <Text style={styles.headerControlTitle}>SHOWROOM ADMIN CONTROL</Text>
         </View>
 
+        <TouchableOpacity
+          onPress={() => setCurrentRoute('profile')}
+          style={styles.headerIconButton}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="person-outline" size={22} color="#f8fafc" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Main View Area */}
+      <View style={styles.mainContentArea}>
         {loading ? (
-          <ActivityIndicator size="large" color="#8b5cf6" style={styles.loader} />
-        ) : staff.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No staff members provisioned yet.</Text>
-            <Button
-              title="➕ Provision First Staff Member"
-              onPress={() => setShowModal(true)}
-              style={styles.emptyAddBtn}
-            />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#a855f7" />
+            <Text style={styles.loadingText}>Loading Showroom Dashboard...</Text>
           </View>
         ) : (
-          staff.map((member) => (
-            <View key={member.id} style={styles.staffCard}>
-              <View style={styles.staffHeader}>
-                <View>
-                  <Text style={styles.staffName}>{member.full_name}</Text>
-                  <Text style={styles.staffPhone}>📞 {member.phone}</Text>
-                </View>
-                <View
-                  style={[
-                    styles.roleBadge,
-                    member.role === 'WORKER'
-                      ? styles.workerBadge
-                      : styles.inventoryBadge,
-                  ]}
-                >
-                  <Text style={styles.roleText}>
-                    {member.role === 'WORKER' ? 'WORKER' : 'INVENTORY'}
-                  </Text>
-                </View>
-              </View>
-
-              {member.email ? (
-                <Text style={styles.staffEmail}>✉️ {member.email}</Text>
-              ) : null}
-            </View>
-          ))
+          renderCurrentView()
         )}
+      </View>
 
-        <Button
-          title="Sign Out"
-          onPress={logout}
-          variant="danger"
-          style={styles.logoutBtn}
-        />
-      </ScrollView>
+      {/* Bottom Navigation Bar */}
+      <AdminBottomBar
+        currentRoute={currentRoute}
+        onNavigate={(route) => setCurrentRoute(route)}
+      />
 
-      {/* Modal: Provision Staff */}
+      {/* Navigation Drawer Component */}
+      <AdminDrawer
+        visible={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        currentRoute={currentRoute}
+        onNavigate={(route) => setCurrentRoute(route)}
+        showroomName={showroomTitle}
+        showroomCode={showroomCode}
+        onLogout={logout}
+      />
+
+      {/* Provision Staff Modal */}
       <Modal
-        visible={showModal}
+        visible={showAddStaffModal}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setShowModal(false)}
+        onRequestClose={() => setShowAddStaffModal(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -422,14 +515,14 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
               <Input label="Email (Optional)" placeholder="ramesh@dealership.com" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
               <Input label="Password" placeholder="At least 6 characters" secureTextEntry value={password} onChangeText={setPassword} />
 
-              <Button title="Provision Staff Account" onPress={handleCreateStaff} isLoading={isSubmitting} style={styles.modalSubmitBtn} />
-              <Button title="Cancel" onPress={() => setShowModal(false)} variant="secondary" />
+              <Button title="Provision Staff Account" onPress={handleCreateStaff} isLoading={isSubmittingStaff} style={styles.modalSubmitBtn} />
+              <Button title="Cancel" onPress={() => setShowAddStaffModal(false)} variant="secondary" />
             </ScrollView>
           </View>
         </View>
       </Modal>
 
-      {/* Modal: Select Technician / Worker for Service Job */}
+      {/* Assign Worker Modal */}
       <Modal
         visible={selectedJob !== null}
         animationType="slide"
@@ -453,7 +546,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
                   onPress={() => {
                     setSelectedJob(null);
                     setRole('WORKER');
-                    setShowModal(true);
+                    setShowAddStaffModal(true);
                   }}
                 />
               </View>
@@ -492,7 +585,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
         </View>
       </Modal>
 
-      {/* Modal: Admin Response to Customer Feedback */}
+      {/* Response to Customer Feedback Modal */}
       <Modal
         visible={selectedFeedback !== null}
         animationType="slide"
@@ -535,95 +628,107 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
+  safeContainer: {
+    flex: 1,
+    backgroundColor: '#070a12',
   },
-  brandHeaderBar: {
+  topHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
-    paddingTop: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1e293b',
+    backgroundColor: '#090d16',
   },
-  brandTitleGroup: {
+  headerIconButton: {
+    padding: 6,
+    borderRadius: 8,
+  },
+  headerTitleCenter: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+  },
+  headerControlTitle: {
+    color: '#a855f7',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+  },
+  mainContentArea: {
     flex: 1,
   },
-  headerLogoIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  headerLogoutBtn: {
-    backgroundColor: '#1e293b',
-    padding: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#334155',
+  loadingText: {
+    color: '#94a3b8',
+    marginTop: 12,
+    fontSize: 13,
   },
-  badge: {
-    color: '#8b5cf6',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1.5,
-    marginBottom: 2,
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 24,
   },
-  title: {
-    fontSize: 22,
+  dashboardBannerHeader: {
+    marginBottom: 16,
+  },
+  dashboardTitle: {
+    fontSize: 24,
     fontWeight: '800',
     color: '#f8fafc',
   },
-  subtitle: {
+  dashboardSubtitle: {
     fontSize: 13,
     color: '#94a3b8',
+    marginTop: 4,
     lineHeight: 18,
   },
-  showroomCard: {
-    borderRadius: 18,
-    overflow: 'hidden',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#8b5cf6',
-    position: 'relative',
-    height: 120,
-  },
-  bannerImage: {
-    width: '100%',
-    height: '100%',
-    position: 'absolute',
-  },
-  bannerOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(7, 10, 18, 0.75)',
+  scopeCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(168, 85, 247, 0.08)',
+    borderRadius: 16,
     padding: 16,
-    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(168, 85, 247, 0.25)',
+    marginBottom: 16,
   },
-  cardLabel: {
-    color: '#94a3b8',
+  scopeLeftCol: {
+    flex: 1,
+  },
+  scopeLabel: {
+    color: '#a855f7',
     fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
     marginBottom: 4,
   },
-  cardTitle: {
-    color: '#94a3b8',
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  showroomName: {
+  scopeShowroomName: {
     color: '#38bdf8',
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
   },
-  showroomCode: {
+  scopeBranchCode: {
     color: '#cbd5e1',
     fontSize: 13,
     marginTop: 2,
+  },
+  scopeIconBox: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: 'rgba(168, 85, 247, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(168, 85, 247, 0.3)',
   },
   statsGrid: {
     flexDirection: 'row',
@@ -639,122 +744,113 @@ const styles = StyleSheet.create({
     borderColor: '#1e293b',
   },
   jobsStatCard: {
-    borderColor: 'rgba(139, 92, 246, 0.4)',
-  },
-  jobsStatText: {
-    color: '#8b5cf6',
+    borderColor: 'rgba(168, 85, 247, 0.3)',
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
     color: '#f59e0b',
     marginBottom: 2,
   },
-  inventoryText: {
-    color: '#06b6d4',
-  },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748b',
     fontWeight: '600',
   },
-  shortcutRow: {
+  quickActionsGrid: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
+    gap: 10,
+    marginBottom: 24,
   },
-  shortcutBtn: {
+  quickActionCard: {
     flex: 1,
     backgroundColor: '#0f172a',
-    padding: 16,
     borderRadius: 14,
+    padding: 14,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#1e293b',
   },
-  addStaffBtn: {
-    borderColor: '#8b5cf6',
+  addStaffActionCard: {
+    borderColor: 'rgba(168, 85, 247, 0.4)',
+    backgroundColor: 'rgba(168, 85, 247, 0.05)',
   },
-  shortcutIcon: {
-    fontSize: 24,
-    marginBottom: 6,
-  },
-  shortcutTitle: {
+  quickActionLabel: {
     color: '#f8fafc',
     fontSize: 12,
     fontWeight: '700',
+    marginTop: 8,
   },
-  sectionHeader: {
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 12,
   },
-  sectionTitle: {
+  sectionHeaderTitle: {
     fontSize: 18,
     fontWeight: '800',
     color: '#f8fafc',
   },
-  loader: {
-    marginVertical: 20,
-  },
-  emptyCard: {
-    backgroundColor: '#0f172a',
-    padding: 20,
+  viewAllBtn: {
+    backgroundColor: 'rgba(168, 85, 247, 0.12)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(168, 85, 247, 0.25)',
+  },
+  viewAllText: {
+    color: '#a855f7',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  emptyActivityCard: {
+    backgroundColor: '#0f172a',
+    borderRadius: 16,
+    padding: 24,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#1e293b',
   },
-  emptyText: {
+  emptyActivityTitle: {
+    color: '#f8fafc',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  emptyActivitySub: {
     color: '#64748b',
-    marginBottom: 12,
+    fontSize: 12,
+    marginTop: 2,
+    textAlign: 'center',
   },
-  emptyAddBtn: {
-    width: '100%',
-  },
-  staffCard: {
+  activityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     backgroundColor: '#0f172a',
     borderRadius: 14,
-    padding: 16,
+    padding: 14,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: '#1e293b',
   },
-  staffHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+  activityIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  staffName: {
-    fontSize: 16,
+  activityTitle: {
+    color: '#f8fafc',
+    fontSize: 14,
     fontWeight: '700',
-    color: '#f8fafc',
   },
-  staffPhone: {
-    fontSize: 13,
+  activitySubtitle: {
     color: '#94a3b8',
-    marginTop: 2,
-  },
-  roleBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  workerBadge: {
-    backgroundColor: 'rgba(245, 158, 11, 0.2)',
-  },
-  inventoryBadge: {
-    backgroundColor: 'rgba(6, 182, 212, 0.2)',
-  },
-  roleText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#f8fafc',
-  },
-  staffEmail: {
     fontSize: 12,
-    color: '#64748b',
-    marginTop: 6,
-  },
-  logoutBtn: {
-    marginTop: 20,
-    marginBottom: 30,
+    marginTop: 1,
   },
   modalOverlay: {
     flex: 1,
@@ -801,11 +897,11 @@ const styles = StyleSheet.create({
     borderColor: '#334155',
   },
   roleActiveWorker: {
-    backgroundColor: 'rgba(245, 158, 11, 0.3)',
+    backgroundColor: 'rgba(245, 158, 11, 0.2)',
     borderColor: '#f59e0b',
   },
   roleActiveInventory: {
-    backgroundColor: 'rgba(6, 182, 212, 0.3)',
+    backgroundColor: 'rgba(6, 182, 212, 0.2)',
     borderColor: '#06b6d4',
   },
   roleToggleText: {

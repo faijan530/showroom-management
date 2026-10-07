@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  FlatList,
   ActivityIndicator,
   Alert,
   Modal,
@@ -25,9 +24,15 @@ import {
   AuditLogItem,
 } from '../lib/showrooms-api';
 import { Showroom } from '../types/showroom';
+import { SuperAdminDrawer, SuperAdminRouteName } from '../components/navigation/SuperAdminDrawer';
+import { SuperAdminBottomBar } from '../components/navigation/SuperAdminBottomBar';
+import { AdminProfileScreen } from './AdminProfileScreen';
 
 export const SuperAdminDashboardScreen: React.FC = () => {
   const { user, logout } = useAuthStore();
+
+  const [currentRoute, setCurrentRoute] = useState<SuperAdminRouteName>('dashboard');
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const [showrooms, setShowrooms] = useState<Showroom[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
@@ -113,7 +118,6 @@ export const SuperAdminDashboardScreen: React.FC = () => {
 
       Alert.alert('Success', `Showroom "${name}" onboarded successfully!`);
       setShowAddShowroomModal(false);
-      // Reset form
       setName('');
       setCode('');
       setAddress('');
@@ -152,14 +156,14 @@ export const SuperAdminDashboardScreen: React.FC = () => {
 
       Alert.alert(
         'Admin Provisioned',
-        `Admin credentials created for ${selectedShowroomForAdmin.name}!`
+        `Allocated Admin account for ${adminName} at ${selectedShowroomForAdmin.name}!`
       );
       setShowAddAdminModal(false);
+      setSelectedShowroomForAdmin(null);
       setAdminName('');
       setAdminPhone('');
       setAdminEmail('');
       setAdminPassword('');
-      setSelectedShowroomForAdmin(null);
       fetchPlatformData();
     } catch (err: any) {
       Alert.alert('Provisioning Failed', err.message || 'Could not provision admin');
@@ -170,175 +174,225 @@ export const SuperAdminDashboardScreen: React.FC = () => {
 
   const activeCount = showrooms.filter((s) => s.status === 'ACTIVE').length;
 
-  return (
-    <SafeScreen>
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* Brand Bar Header */}
-        <View style={styles.brandHeaderBar}>
-          <View style={styles.brandTitleGroup}>
-            <Image
-              source={require('../../assets/logo.png')}
-              style={styles.headerLogoIcon}
-              resizeMode="contain"
-            />
-            <View>
-              <Text style={styles.badge}>SUPERADMIN GOVERNANCE</Text>
-              <Text style={styles.title}>Platform Control</Text>
-            </View>
-          </View>
-          <TouchableOpacity onPress={logout} style={styles.headerLogoutBtn}>
-            <Ionicons name="log-out-outline" size={22} color="#f43f5e" />
-          </TouchableOpacity>
-        </View>
+  const filteredShowrooms = showrooms.filter((s) => {
+    if (statusFilter === 'ACTIVE') return s.status === 'ACTIVE';
+    if (statusFilter === 'SUSPENDED') return s.status === 'SUSPENDED';
+    return true;
+  });
 
-        {/* Stats Grid */}
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{showrooms.length}</Text>
-            <Text style={styles.statLabel}>Total Showrooms</Text>
-          </View>
-
-          <View style={[styles.statCard, styles.activeBorder]}>
-            <Text style={[styles.statNumber, styles.activeText]}>{activeCount}</Text>
-            <Text style={styles.statLabel}>Active Branches</Text>
-          </View>
-        </View>
-
-        {/* Action Button */}
-        <Button
-          title="➕ Onboard New Showroom"
-          onPress={() => setShowAddShowroomModal(true)}
-          style={styles.addBtn}
-        />
-
-        {/* Showrooms Directory Section */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionTitle}>Registered Dealerships</Text>
-
-          <View style={styles.filterRow}>
-            {(['ALL', 'ACTIVE', 'SUSPENDED'] as const).map((st) => (
-              <TouchableOpacity
-                key={st}
-                style={[
-                  styles.filterChip,
-                  statusFilter === st ? styles.filterChipActive : null,
-                ]}
-                onPress={() => setStatusFilter(st)}
-              >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    statusFilter === st ? styles.filterChipTextActive : null,
-                  ]}
-                >
-                  {st}
-                </Text>
+  const renderCurrentView = () => {
+    switch (currentRoute) {
+      case 'profile':
+        return <AdminProfileScreen />;
+      case 'showrooms':
+      case 'audit_logs':
+      case 'dashboard':
+      default:
+        return (
+          <ScrollView contentContainerStyle={styles.container}>
+            {/* Brand Bar Header */}
+            <View style={styles.brandHeaderBar}>
+              <View style={styles.brandTitleGroup}>
+                <Image
+                  source={require('../../assets/logo.png')}
+                  style={styles.headerLogoIcon}
+                  resizeMode="contain"
+                />
+                <View>
+                  <Text style={styles.badge}>SUPERADMIN GOVERNANCE</Text>
+                  <Text style={styles.title}>Platform Control</Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={logout} style={styles.headerLogoutBtn}>
+                <Ionicons name="log-out-outline" size={22} color="#f43f5e" />
               </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {loading ? (
-          <ActivityIndicator size="large" color="#3b82f6" style={styles.loader} />
-        ) : showrooms.filter((s) => statusFilter === 'ALL' || s.status === statusFilter).length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No {statusFilter !== 'ALL' ? statusFilter.toLowerCase() : ''} showrooms found.</Text>
-          </View>
-        ) : (
-          showrooms
-            .filter((s) => statusFilter === 'ALL' || s.status === statusFilter)
-            .map((showroom) => (
-              <View key={showroom.id} style={styles.showroomCard}>
-                <View style={styles.cardHeaderRow}>
-                  <View style={styles.showroomTitleCol}>
-                    <Text style={styles.showroomName}>{showroom.name}</Text>
-                    <Text style={styles.showroomCode}>CODE: {showroom.code}</Text>
-                  </View>
-
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      showroom.status === 'ACTIVE'
-                        ? styles.statusActive
-                        : styles.statusSuspended,
-                    ]}
-                  >
-                    <Text style={styles.statusText}>{showroom.status}</Text>
-                  </View>
-                </View>
-
-                <Text style={styles.addressText}>📍 {showroom.address}</Text>
-                <Text style={styles.contactText}>
-                  📞 {showroom.contact_phone} • ✉️ {showroom.contact_email}
-                </Text>
-
-                {/* Action Buttons Row */}
-                <View style={styles.cardActionsRow}>
-                  <TouchableOpacity
-                    style={styles.adminActionBtn}
-                    onPress={() => {
-                      setSelectedShowroomForAdmin(showroom);
-                      setShowAddAdminModal(true);
-                    }}
-                  >
-                    <Text style={styles.adminActionText}>👤 Attach Admin</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.statusToggleBtn,
-                      showroom.status === 'ACTIVE'
-                        ? styles.suspendBtn
-                        : styles.activateBtn,
-                    ]}
-                    onPress={() => handleToggleStatus(showroom)}
-                  >
-                    <Text style={styles.statusToggleText}>
-                      {showroom.status === 'ACTIVE' ? 'Suspend' : 'Activate'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
-        )}
-
-        {/* 📜 Platform Audit Logs Stream */}
-        <View style={styles.auditSection}>
-          <Text style={styles.sectionTitle}>📜 Platform Activity & Audit Stream</Text>
-          <Text style={styles.auditSubtitle}>Real-time system events across all showroom nodes.</Text>
-
-          {auditLogs.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>No recent audit logs recorded.</Text>
             </View>
-          ) : (
-            auditLogs.map((log) => (
-              <View key={log.id} style={styles.auditRow}>
-                <View style={styles.auditBadge}>
-                  <Text style={styles.auditBadgeText}>{log.actor_role}</Text>
-                </View>
-                <View style={styles.auditMetaCol}>
-                  <Text style={styles.auditActionText}>{log.action}</Text>
-                  <Text style={styles.auditDetailsText}>
-                    By {log.actor_name} • {log.showroom_name}
-                  </Text>
-                </View>
-                <Text style={styles.auditTimeText}>
-                  {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </Text>
+
+            {/* Stats Grid */}
+            <View style={styles.statsGrid}>
+              <View style={styles.statCard}>
+                <Text style={styles.statNumber}>{showrooms.length}</Text>
+                <Text style={styles.statLabel}>Total Showrooms</Text>
               </View>
-            ))
-          )}
+
+              <View style={[styles.statCard, styles.activeBorder]}>
+                <Text style={[styles.statNumber, styles.activeText]}>{activeCount}</Text>
+                <Text style={styles.statLabel}>Active Branches</Text>
+              </View>
+            </View>
+
+            {/* Action Button */}
+            <Button
+              title="➕ Onboard New Showroom"
+              onPress={() => setShowAddShowroomModal(true)}
+              style={styles.addBtn}
+            />
+
+            {/* Showroom Network Status Filter */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Dealership Network Directory</Text>
+            </View>
+
+            <View style={styles.filterRow}>
+              {(['ALL', 'ACTIVE', 'SUSPENDED'] as const).map((filter) => (
+                <TouchableOpacity
+                  key={filter}
+                  style={[
+                    styles.filterTab,
+                    statusFilter === filter ? styles.activeFilterTab : null,
+                  ]}
+                  onPress={() => setStatusFilter(filter)}
+                >
+                  <Text
+                    style={[
+                      styles.filterTabText,
+                      statusFilter === filter ? styles.activeFilterTabText : null,
+                    ]}
+                  >
+                    {filter}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Showroom List */}
+            {loading ? (
+              <ActivityIndicator size="large" color="#f43f5e" style={styles.loader} />
+            ) : filteredShowrooms.length === 0 ? (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyText}>No showrooms onboarded in this status.</Text>
+              </View>
+            ) : (
+              filteredShowrooms.map((showroom) => (
+                <View key={showroom.id} style={styles.showroomCard}>
+                  <View style={styles.showroomHeader}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.showroomName}>{showroom.name}</Text>
+                      <Text style={styles.showroomCode}>Code: {showroom.code}</Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        showroom.status === 'ACTIVE'
+                          ? styles.activeBadge
+                          : styles.suspendedBadge,
+                      ]}
+                    >
+                      <Text style={styles.statusText}>{showroom.status}</Text>
+                    </View>
+                  </View>
+
+                  <Text style={styles.addressText}>📍 {showroom.address}</Text>
+                  <Text style={styles.contactText}>
+                    📞 {showroom.contact_phone} • ✉️ {showroom.contact_email}
+                  </Text>
+
+                  <View style={styles.cardActionsRow}>
+                    <TouchableOpacity
+                      style={styles.adminActionBtn}
+                      onPress={() => {
+                        setSelectedShowroomForAdmin(showroom);
+                        setShowAddAdminModal(true);
+                      }}
+                    >
+                      <Text style={styles.adminActionText}>👤 Provision Admin</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.statusToggleBtn,
+                        showroom.status === 'ACTIVE'
+                          ? styles.suspendBtn
+                          : styles.activateBtn,
+                      ]}
+                      onPress={() => handleToggleStatus(showroom)}
+                    >
+                      <Text style={styles.statusToggleText}>
+                        {showroom.status === 'ACTIVE' ? 'Suspend' : 'Activate'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            )}
+
+            {/* Global System Audit Trail Logs */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Global System Audit Trail</Text>
+            </View>
+
+            <View style={styles.card}>
+              {auditLogs.length === 0 ? (
+                <Text style={styles.emptyAuditText}>No audit trail events logged yet.</Text>
+              ) : (
+                auditLogs.slice(0, 8).map((log) => (
+                  <View key={log.id} style={styles.auditRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.auditActionText}>{log.action.replace(/_/g, ' ')}</Text>
+                      <Text style={styles.auditActorText}>
+                        By {log.actor_name} • {log.showroom_name}
+                      </Text>
+                    </View>
+                    <Text style={styles.auditTimeText}>
+                      {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                  </View>
+                ))
+              )}
+            </View>
+
+            <Button
+              title="Sign Out"
+              onPress={logout}
+              variant="danger"
+              style={styles.logoutBtn}
+            />
+          </ScrollView>
+        );
+    }
+  };
+
+  return (
+    <SafeScreen style={styles.safeContainer}>
+      <View style={styles.topHeader}>
+        <TouchableOpacity
+          onPress={() => setDrawerOpen(true)}
+          style={styles.headerIconButton}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="menu" size={24} color="#f8fafc" />
+        </TouchableOpacity>
+
+        <View style={styles.headerTitleCenter}>
+          <Ionicons name="shield-checkmark" size={16} color="#f43f5e" style={{ marginRight: 6 }} />
+          <Text style={styles.headerControlTitle}>SUPERADMIN CONTROL</Text>
         </View>
 
+        <TouchableOpacity
+          onPress={() => setCurrentRoute('profile')}
+          style={styles.headerIconButton}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="person-outline" size={22} color="#f8fafc" />
+        </TouchableOpacity>
+      </View>
 
-        <Button
-          title="Sign Out"
-          onPress={logout}
-          variant="danger"
-          style={styles.logoutBtn}
-        />
-      </ScrollView>
+      <View style={styles.mainContentArea}>
+        {renderCurrentView()}
+      </View>
+
+      <SuperAdminBottomBar
+        currentRoute={currentRoute}
+        onNavigate={(route) => setCurrentRoute(route)}
+      />
+
+      <SuperAdminDrawer
+        visible={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        currentRoute={currentRoute}
+        onNavigate={(route) => setCurrentRoute(route)}
+        onLogout={logout}
+      />
 
       {/* Modal 1: Onboard New Showroom */}
       <Modal
@@ -382,7 +436,7 @@ export const SuperAdminDashboardScreen: React.FC = () => {
               <Input label="Email (Optional)" placeholder="rajesh@dealership.com" keyboardType="email-address" autoCapitalize="none" value={adminEmail} onChangeText={setAdminEmail} />
               <Input label="Password" placeholder="At least 6 characters" secureTextEntry value={adminPassword} onChangeText={setAdminPassword} />
 
-              <Button title="Create Admin Credentials" onPress={handleProvisionAdmin} isLoading={isSubmittingAdmin} style={styles.modalSubmitBtn} />
+              <Button title="Provision Showroom Admin" onPress={handleProvisionAdmin} isLoading={isSubmittingAdmin} style={styles.modalSubmitBtn} />
               <Button title="Cancel" onPress={() => setShowAddAdminModal(false)} variant="secondary" />
             </ScrollView>
           </View>
@@ -393,8 +447,40 @@ export const SuperAdminDashboardScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  safeContainer: {
+    flex: 1,
+    backgroundColor: '#070a12',
+  },
+  topHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1e293b',
+    backgroundColor: '#090d16',
+  },
+  headerIconButton: {
+    padding: 6,
+    borderRadius: 8,
+  },
+  headerTitleCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerControlTitle: {
+    color: '#f43f5e',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+  },
+  mainContentArea: {
+    flex: 1,
+  },
   container: {
     padding: 20,
+    paddingBottom: 24,
   },
   brandHeaderBar: {
     flexDirection: 'row',
@@ -421,9 +507,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#334155',
   },
-  header: {
-    marginBottom: 20,
-  },
   badge: {
     color: '#f43f5e',
     fontSize: 10,
@@ -435,11 +518,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     color: '#f8fafc',
-  },
-  subtitle: {
-    fontSize: 13,
-    color: '#94a3b8',
-    lineHeight: 18,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -455,7 +533,7 @@ const styles = StyleSheet.create({
     borderColor: '#1e293b',
   },
   activeBorder: {
-    borderColor: '#10b981',
+    borderColor: 'rgba(244, 63, 94, 0.4)',
   },
   statNumber: {
     fontSize: 26,
@@ -464,7 +542,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   activeText: {
-    color: '#10b981',
+    color: '#f43f5e',
   },
   statLabel: {
     fontSize: 12,
@@ -482,6 +560,32 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#f8fafc',
   },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 14,
+  },
+  filterTab: {
+    flex: 1,
+    backgroundColor: '#0f172a',
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  activeFilterTab: {
+    backgroundColor: '#f43f5e',
+    borderColor: '#f43f5e',
+  },
+  filterTabText: {
+    color: '#94a3b8',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  activeFilterTabText: {
+    color: '#ffffff',
+  },
   loader: {
     marginVertical: 20,
   },
@@ -498,28 +602,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#0f172a',
     borderRadius: 16,
     padding: 16,
-    marginBottom: 14,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#1e293b',
   },
-  cardHeaderRow: {
+  showroomHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  showroomTitleCol: {
-    flex: 1,
-    marginRight: 10,
+    marginBottom: 6,
   },
   showroomName: {
+    color: '#f8fafc',
     fontSize: 17,
     fontWeight: '800',
-    color: '#f8fafc',
   },
   showroomCode: {
+    color: '#f43f5e',
     fontSize: 12,
-    color: '#38bdf8',
     fontWeight: '700',
     marginTop: 2,
   },
@@ -528,10 +628,10 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 6,
   },
-  statusActive: {
+  activeBadge: {
     backgroundColor: 'rgba(16, 185, 129, 0.2)',
   },
-  statusSuspended: {
+  suspendedBadge: {
     backgroundColor: 'rgba(239, 68, 68, 0.2)',
   },
   statusText: {
@@ -584,9 +684,46 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+  card: {
+    backgroundColor: '#0f172a',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  emptyAuditText: {
+    color: '#64748b',
+    fontSize: 13,
+    textAlign: 'center',
+    paddingVertical: 10,
+  },
+  auditRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1e293b',
+  },
+  auditActionText: {
+    color: '#f8fafc',
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
+  auditActorText: {
+    color: '#94a3b8',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  auditTimeText: {
+    color: '#64748b',
+    fontSize: 11,
+  },
   logoutBtn: {
-    marginTop: 20,
-    marginBottom: 30,
+    marginTop: 10,
+    marginBottom: 20,
   },
   modalOverlay: {
     flex: 1,
@@ -615,84 +752,4 @@ const styles = StyleSheet.create({
   modalSubmitBtn: {
     marginVertical: 10,
   },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  filterChip: {
-    backgroundColor: '#0f172a',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#1e293b',
-  },
-  filterChipActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
-  },
-  filterChipText: {
-    color: '#64748b',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  filterChipTextActive: {
-    color: '#ffffff',
-  },
-  auditSection: {
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  auditSubtitle: {
-    color: '#94a3b8',
-    fontSize: 12,
-    marginBottom: 12,
-  },
-  auditRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0f172a',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#1e293b',
-  },
-  auditBadge: {
-    backgroundColor: '#1e293b',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    marginRight: 10,
-  },
-  auditBadgeText: {
-    color: '#38bdf8',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  auditMetaCol: {
-    flex: 1,
-  },
-  auditActionText: {
-    color: '#f8fafc',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  auditDetailsText: {
-    color: '#94a3b8',
-    fontSize: 11,
-    marginTop: 1,
-  },
-  auditTimeText: {
-    color: '#64748b',
-    fontSize: 11,
-    fontWeight: '600',
-  },
 });
-

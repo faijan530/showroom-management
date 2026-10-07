@@ -5,9 +5,16 @@ import { SafeScreen } from '../components/ui/SafeScreen';
 import { Button } from '../components/ui/Button';
 import { useAuthStore } from '../store/auth.store';
 import { getServiceJobs, updateServiceJob, ServiceJobItem, ServiceJobStatus } from '../lib/services-api';
+import { WorkerDrawer, WorkerRouteName } from '../components/navigation/WorkerDrawer';
+import { WorkerBottomBar } from '../components/navigation/WorkerBottomBar';
+import { SparePartsScreen } from './SparePartsScreen';
+import { AdminProfileScreen } from './AdminProfileScreen';
 
 export const WorkerDashboardScreen: React.FC = () => {
   const { user, logout } = useAuthStore();
+  const [currentRoute, setCurrentRoute] = useState<WorkerRouteName>('dashboard');
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
   const [jobs, setJobs] = useState<ServiceJobItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -47,120 +54,211 @@ export const WorkerDashboardScreen: React.FC = () => {
   const inProgressCount = jobs.filter((j) => j.status === 'IN_PROGRESS').length;
   const completedCount = jobs.filter((j) => j.status === 'COMPLETED').length;
 
-  return (
-    <SafeScreen>
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* Brand Bar Header */}
-        <View style={styles.brandHeaderBar}>
-          <View style={styles.brandTitleGroup}>
-            <Image
-              source={require('../../assets/logo.png')}
-              style={styles.headerLogoIcon}
-              resizeMode="contain"
-            />
-            <View>
-              <Text style={styles.badge}>TECHNICIAN SERVICE BAY</Text>
-              <Text style={styles.title}>Service Task Queue</Text>
-            </View>
-          </View>
-          <TouchableOpacity onPress={logout} style={styles.headerLogoutBtn}>
-            <Ionicons name="log-out-outline" size={22} color="#f43f5e" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Showroom Context */}
-        <View style={styles.showroomCard}>
-          <Text style={styles.cardLabel}>ASSIGNED WORKSHOP</Text>
-          <Text style={styles.showroomName}>{showroomTitle}</Text>
-          <Text style={styles.showroomCode}>Dealer Code: {showroomCode}</Text>
-        </View>
-
-        {/* Task Summary Grid */}
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{assignedCount}</Text>
-            <Text style={styles.statLabel}>Assigned Jobs</Text>
-          </View>
-
-          <View style={styles.statCard}>
-            <Text style={[styles.statNumber, styles.inProgressText]}>{inProgressCount}</Text>
-            <Text style={styles.statLabel}>In Progress</Text>
-          </View>
-
-          <View style={styles.statCard}>
-            <Text style={[styles.statNumber, styles.completedText]}>{completedCount}</Text>
-            <Text style={styles.statLabel}>Completed</Text>
-          </View>
-        </View>
-
-        {/* Task Queue List / Empty State */}
-        {loading ? (
-          <ActivityIndicator size="large" color="#f59e0b" style={{ marginVertical: 20 }} />
-        ) : jobs.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyIcon}>🔧</Text>
-            <Text style={styles.emptyTitle}>Task Queue Clear</Text>
-            <Text style={styles.emptyDesc}>
-              No service jobs assigned to your queue at this moment. When showroom managers allocate a repair task, it will appear here instantly.
-            </Text>
-          </View>
-        ) : (
-          jobs.map((job) => (
-            <View key={job.id} style={styles.jobItemCard}>
-              <View style={styles.jobHeaderRow}>
-                <Text style={styles.jobCustomer}>{job.customer_name}</Text>
-                <View style={[styles.jobStatusTag, { backgroundColor: job.status === 'COMPLETED' ? '#10b981' : job.status === 'IN_PROGRESS' ? '#f59e0b' : '#3b82f6' }]}>
-                  <Text style={styles.jobStatusText}>{job.status}</Text>
+  const renderCurrentView = () => {
+    switch (currentRoute) {
+      case 'spare_parts':
+        return (
+          <SparePartsScreen
+            onSelectPart={() => {}}
+            onBack={() => setCurrentRoute('dashboard')}
+          />
+        );
+      case 'profile':
+        return <AdminProfileScreen />;
+      case 'dashboard':
+      default:
+        return (
+          <ScrollView contentContainerStyle={styles.container}>
+            {/* Brand Bar Header */}
+            <View style={styles.brandHeaderBar}>
+              <View style={styles.brandTitleGroup}>
+                <Image
+                  source={require('../../assets/logo.png')}
+                  style={styles.headerLogoIcon}
+                  resizeMode="contain"
+                />
+                <View>
+                  <Text style={styles.badge}>TECHNICIAN SERVICE BAY</Text>
+                  <Text style={styles.title}>Service Task Queue</Text>
                 </View>
               </View>
-              <Text style={styles.jobVehicle}>{job.vehicle_details} ({job.vehicle_type})</Text>
-              <Text style={styles.jobDesc}>{job.service_description}</Text>
-              <Text style={styles.jobPhone}>📞 Contact: {job.customer_phone}</Text>
+              <TouchableOpacity onPress={logout} style={styles.headerLogoutBtn}>
+                <Ionicons name="log-out-outline" size={22} color="#f43f5e" />
+              </TouchableOpacity>
+            </View>
 
-              {/* Status Action Controls */}
-              <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#1e293b', flexDirection: 'row', gap: 10 }}>
-                {job.status !== 'IN_PROGRESS' && job.status !== 'COMPLETED' ? (
-                  <TouchableOpacity
-                    style={{ flex: 1, backgroundColor: '#f59e0b', paddingVertical: 8, borderRadius: 8, alignItems: 'center' }}
-                    onPress={() => handleUpdateStatus(job.id, 'IN_PROGRESS')}
-                    disabled={updatingId === job.id}
-                  >
-                    <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '700' }}>⚡ Start Repair</Text>
-                  </TouchableOpacity>
-                ) : null}
+            {/* Showroom Context */}
+            <View style={styles.showroomCard}>
+              <Text style={styles.cardLabel}>ASSIGNED WORKSHOP</Text>
+              <Text style={styles.showroomName}>{showroomTitle}</Text>
+              <Text style={styles.showroomCode}>Dealer Code: {showroomCode}</Text>
+            </View>
 
-                {job.status !== 'COMPLETED' ? (
-                  <TouchableOpacity
-                    style={{ flex: 1, backgroundColor: '#10b981', paddingVertical: 8, borderRadius: 8, alignItems: 'center' }}
-                    onPress={() => handleUpdateStatus(job.id, 'COMPLETED')}
-                    disabled={updatingId === job.id}
-                  >
-                    <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '700' }}>✅ Mark Complete</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <View style={{ flex: 1, backgroundColor: '#1e293b', paddingVertical: 8, borderRadius: 8, alignItems: 'center' }}>
-                    <Text style={{ color: '#10b981', fontSize: 12, fontWeight: '700' }}>Job Finished 🎉</Text>
-                  </View>
-                )}
+            {/* Task Summary Grid */}
+            <View style={styles.statsGrid}>
+              <View style={styles.statCard}>
+                <Text style={styles.statNumber}>{assignedCount}</Text>
+                <Text style={styles.statLabel}>Assigned Jobs</Text>
+              </View>
+
+              <View style={styles.statCard}>
+                <Text style={[styles.statNumber, styles.inProgressText]}>{inProgressCount}</Text>
+                <Text style={styles.statLabel}>In Progress</Text>
+              </View>
+
+              <View style={styles.statCard}>
+                <Text style={[styles.statNumber, styles.completedText]}>{completedCount}</Text>
+                <Text style={styles.statLabel}>Completed</Text>
               </View>
             </View>
-          ))
-        )}
 
-        <Button
-          title="Sign Out"
-          onPress={logout}
-          variant="danger"
-          style={styles.logoutBtn}
-        />
-      </ScrollView>
+            {/* Task Queue List / Empty State */}
+            {loading ? (
+              <ActivityIndicator size="large" color="#f59e0b" style={{ marginVertical: 20 }} />
+            ) : jobs.length === 0 ? (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyIcon}>🔧</Text>
+                <Text style={styles.emptyTitle}>Task Queue Clear</Text>
+                <Text style={styles.emptyDesc}>
+                  No service jobs assigned to your queue at this moment. When showroom managers allocate a repair task, it will appear here instantly.
+                </Text>
+              </View>
+            ) : (
+              jobs.map((job) => (
+                <View key={job.id} style={styles.jobItemCard}>
+                  <View style={styles.jobHeaderRow}>
+                    <Text style={styles.jobCustomer}>{job.customer_name}</Text>
+                    <View style={[styles.jobStatusTag, { backgroundColor: job.status === 'COMPLETED' ? '#10b981' : job.status === 'IN_PROGRESS' ? '#f59e0b' : '#3b82f6' }]}>
+                      <Text style={styles.jobStatusText}>{job.status}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.jobVehicle}>{job.vehicle_details} ({job.vehicle_type})</Text>
+                  <Text style={styles.jobDesc}>{job.service_description}</Text>
+                  <Text style={styles.jobPhone}>📞 Contact: {job.customer_phone}</Text>
+
+                  {/* Status Action Controls */}
+                  <View style={{ marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#1e293b', flexDirection: 'row', gap: 10 }}>
+                    {job.status !== 'IN_PROGRESS' && job.status !== 'COMPLETED' ? (
+                      <TouchableOpacity
+                        style={{ flex: 1, backgroundColor: '#f59e0b', paddingVertical: 8, borderRadius: 8, alignItems: 'center' }}
+                        onPress={() => handleUpdateStatus(job.id, 'IN_PROGRESS')}
+                        disabled={updatingId === job.id}
+                      >
+                        <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '700' }}>⚡ Start Repair</Text>
+                      </TouchableOpacity>
+                    ) : null}
+
+                    {job.status !== 'COMPLETED' ? (
+                      <TouchableOpacity
+                        style={{ flex: 1, backgroundColor: '#10b981', paddingVertical: 8, borderRadius: 8, alignItems: 'center' }}
+                        onPress={() => handleUpdateStatus(job.id, 'COMPLETED')}
+                        disabled={updatingId === job.id}
+                      >
+                        <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '700' }}>✅ Mark Complete</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={{ flex: 1, backgroundColor: '#1e293b', paddingVertical: 8, borderRadius: 8, alignItems: 'center' }}>
+                        <Text style={{ color: '#10b981', fontSize: 12, fontWeight: '700' }}>Job Finished 🎉</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              ))
+            )}
+
+            <Button
+              title="Sign Out"
+              onPress={logout}
+              variant="danger"
+              style={styles.logoutBtn}
+            />
+          </ScrollView>
+        );
+    }
+  };
+
+  return (
+    <SafeScreen style={styles.safeContainer}>
+      <View style={styles.topHeader}>
+        <TouchableOpacity
+          onPress={() => setDrawerOpen(true)}
+          style={styles.headerIconButton}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="menu" size={24} color="#f8fafc" />
+        </TouchableOpacity>
+
+        <View style={styles.headerTitleCenter}>
+          <Ionicons name="construct" size={16} color="#f59e0b" style={{ marginRight: 6 }} />
+          <Text style={styles.headerControlTitle}>TECHNICIAN BAY</Text>
+        </View>
+
+        <TouchableOpacity
+          onPress={() => setCurrentRoute('profile')}
+          style={styles.headerIconButton}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="person-outline" size={22} color="#f8fafc" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.mainContentArea}>
+        {renderCurrentView()}
+      </View>
+
+      <WorkerBottomBar
+        currentRoute={currentRoute}
+        onNavigate={(route) => setCurrentRoute(route)}
+      />
+
+      <WorkerDrawer
+        visible={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        currentRoute={currentRoute}
+        onNavigate={(route) => setCurrentRoute(route)}
+        showroomName={showroomTitle}
+        showroomCode={showroomCode}
+        onLogout={logout}
+      />
     </SafeScreen>
   );
 };
 
 const styles = StyleSheet.create({
+  safeContainer: {
+    flex: 1,
+    backgroundColor: '#070a12',
+  },
+  topHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1e293b',
+    backgroundColor: '#090d16',
+  },
+  headerIconButton: {
+    padding: 6,
+    borderRadius: 8,
+  },
+  headerTitleCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerControlTitle: {
+    color: '#f59e0b',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+  },
+  mainContentArea: {
+    flex: 1,
+  },
   container: {
     padding: 20,
+    paddingBottom: 24,
   },
   brandHeaderBar: {
     flexDirection: 'row',
@@ -187,9 +285,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#334155',
   },
-  header: {
-    marginBottom: 20,
-  },
   badge: {
     color: '#f59e0b',
     fontSize: 10,
@@ -201,11 +296,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     color: '#f8fafc',
-  },
-  subtitle: {
-    fontSize: 13,
-    color: '#94a3b8',
-    lineHeight: 18,
   },
   showroomCard: {
     backgroundColor: '#0f172a',
@@ -291,6 +381,7 @@ const styles = StyleSheet.create({
   },
   logoutBtn: {
     marginTop: 10,
+    marginBottom: 20,
   },
   jobItemCard: {
     backgroundColor: '#0f172a',

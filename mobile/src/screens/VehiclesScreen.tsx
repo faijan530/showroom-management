@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  ScrollView,
 } from 'react-native';
 import { SafeScreen } from '../components/ui/SafeScreen';
 import { VehicleCard } from '../components/vehicles/VehicleCard';
@@ -109,27 +110,34 @@ export const VehiclesScreen: React.FC<VehiclesScreenProps> = ({
         ) : null}
       </View>
 
-      {/* Filter Tabs (ALL / BIKES / CARS) */}
-      <View style={styles.filterTabs}>
-        {(['ALL', 'BIKE', 'CAR'] as const).map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[
-              styles.filterTab,
-              selectedType === tab ? styles.activeFilterTab : null,
-            ]}
-            onPress={() => setSelectedType(tab)}
-          >
-            <Text
+      {/* Filter Horizontal Scroll Bar */}
+      <View style={styles.filterBarWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterRow}
+        >
+          {(['ALL', 'BIKE', 'CAR'] as const).map((tab) => (
+            <TouchableOpacity
+              key={tab}
               style={[
-                styles.filterTabText,
-                selectedType === tab ? styles.activeFilterTabText : null,
+                styles.filterTab,
+                selectedType === tab ? styles.activeFilterTab : null,
               ]}
+              onPress={() => setSelectedType(tab)}
+              activeOpacity={0.7}
             >
-              {tab === 'ALL' ? 'ALL VEHICLES' : tab === 'BIKE' ? '🏍️ BIKES' : '🚗 CARS'}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text
+                style={[
+                  styles.filterTabText,
+                  selectedType === tab ? styles.activeFilterTabText : null,
+                ]}
+              >
+                {tab === 'ALL' ? 'ALL VEHICLES' : tab === 'BIKE' ? '🏍️ BIKES' : '🚗 CARS'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
       {/* Body List or Loading / Error */}
@@ -229,20 +237,24 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     fontSize: 16,
   },
-  filterTabs: {
-    flexDirection: 'row',
+  filterBarWrapper: {
+    height: 44,
+    marginBottom: 14,
+  },
+  filterRow: {
     paddingHorizontal: 20,
-    gap: 10,
-    marginBottom: 16,
+    alignItems: 'center',
+    gap: 8,
   },
   filterTab: {
-    flex: 1,
+    height: 34,
+    paddingHorizontal: 14,
+    borderRadius: 17,
     backgroundColor: '#0f172a',
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#1e293b',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   activeFilterTab: {
     backgroundColor: '#3b82f6',
@@ -250,11 +262,12 @@ const styles = StyleSheet.create({
   },
   filterTabText: {
     color: '#94a3b8',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   activeFilterTabText: {
     color: '#ffffff',
+    fontWeight: '800',
   },
   listContainer: {
     paddingHorizontal: 20,

@@ -15,17 +15,22 @@ import { Button } from '../components/ui/Button';
 import { useAuthStore } from '../store/auth.store';
 import { getSpareParts, updateSparePart } from '../lib/spare-parts-api';
 import { SparePart } from '../types/spare-part';
+import { InventoryManagerDrawer, InventoryManagerRouteName } from '../components/navigation/InventoryManagerDrawer';
+import { InventoryManagerBottomBar } from '../components/navigation/InventoryManagerBottomBar';
+import { SparePartsScreen } from './SparePartsScreen';
+import { VehiclesScreen } from './VehiclesScreen';
+import { AdminProfileScreen } from './AdminProfileScreen';
 
 interface InventoryManagerDashboardScreenProps {
   onNavigateToVehicles?: () => void;
   onNavigateToSpareParts?: () => void;
 }
 
-export const InventoryManagerDashboardScreen: React.FC<InventoryManagerDashboardScreenProps> = ({
-  onNavigateToVehicles,
-  onNavigateToSpareParts,
-}) => {
+export const InventoryManagerDashboardScreen: React.FC<InventoryManagerDashboardScreenProps> = () => {
   const { user, logout } = useAuthStore();
+
+  const [currentRoute, setCurrentRoute] = useState<InventoryManagerRouteName>('dashboard');
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const [parts, setParts] = useState<SparePart[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,8 +53,6 @@ export const InventoryManagerDashboardScreen: React.FC<InventoryManagerDashboard
   const showroomTitle = user?.showroom_name || user?.showroom?.name || 'Dealership Inventory';
   const showroomCode = user?.showroom_code || user?.showroom?.code || 'SHW-01';
 
-  // Real-time Stock Badge Counts
-  const totalParts = parts.length;
   const inStockCount = parts.filter((p) => p.stock_quantity > p.min_stock_alert).length;
   const lowStockCount = parts.filter((p) => p.stock_quantity > 0 && p.stock_quantity <= p.min_stock_alert).length;
   const outOfStockCount = parts.filter((p) => p.stock_quantity === 0).length;
@@ -71,168 +74,262 @@ export const InventoryManagerDashboardScreen: React.FC<InventoryManagerDashboard
 
   const lowStockItems = parts.filter((p) => p.stock_quantity <= p.min_stock_alert);
 
-  return (
-    <SafeScreen>
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* Brand Bar Header */}
-        <View style={styles.brandHeaderBar}>
-          <View style={styles.brandTitleGroup}>
-            <Image
-              source={require('../../assets/logo.png')}
-              style={styles.headerLogoIcon}
-              resizeMode="contain"
-            />
-            <View>
-              <Text style={styles.badge}>INVENTORY CONTROL PORTAL</Text>
-              <Text style={styles.title}>Stock Management</Text>
-            </View>
-          </View>
-          <TouchableOpacity onPress={logout} style={styles.headerLogoutBtn}>
-            <Ionicons name="log-out-outline" size={22} color="#f43f5e" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Showroom Context */}
-        <View style={styles.showroomCard}>
-          <Text style={styles.cardLabel}>ASSIGNED INVENTORY SCOPE</Text>
-          <Text style={styles.showroomName}>{showroomTitle}</Text>
-          <Text style={styles.showroomCode}>Dealer Code: {showroomCode}</Text>
-        </View>
-
-        {/* Shortcuts */}
-        <View style={styles.shortcutRow}>
-          <TouchableOpacity style={styles.shortcutBtn} onPress={onNavigateToVehicles}>
-            <Text style={styles.shortcutIcon}>🏍️</Text>
-            <Text style={styles.shortcutTitle}>Vehicle Stock Catalog</Text>
-            <Text style={styles.shortcutSub}>Bikes & Cars Stock</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.shortcutBtn, styles.activePartsShortcut]} onPress={onNavigateToSpareParts}>
-            <Text style={styles.shortcutIcon}>📦</Text>
-            <Text style={styles.shortcutTitle}>Spare Parts Stock</Text>
-            <Text style={styles.shortcutSub}>OEM Parts Control</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Live Stock Level Indicators */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Real-Time Stock Health</Text>
-        </View>
-
-        {loading ? (
-          <ActivityIndicator size="large" color="#06b6d4" style={styles.loader} />
-        ) : (
-          <View style={styles.stockStatusContainer}>
-            {/* IN_STOCK Card */}
-            <TouchableOpacity style={[styles.stockCard, styles.inStockBorder]} onPress={onNavigateToSpareParts}>
-              <View style={styles.stockCardHeader}>
-                <Text style={styles.stockIcon}>🟢</Text>
-                <Text style={styles.stockBadgeTitle}>IN_STOCK</Text>
-              </View>
-              <Text style={[styles.stockCount, styles.inStockCountText]}>{inStockCount}</Text>
-              <Text style={styles.stockCardSub}>Healthy Stock Levels</Text>
-            </TouchableOpacity>
-
-            {/* LOW_STOCK Card */}
-            <TouchableOpacity style={[styles.stockCard, styles.lowStockBorder]} onPress={onNavigateToSpareParts}>
-              <View style={styles.stockCardHeader}>
-                <Text style={styles.stockIcon}>🟡</Text>
-                <Text style={styles.stockBadgeTitle}>LOW_STOCK</Text>
-              </View>
-              <Text style={[styles.stockCount, styles.lowStockCountText]}>{lowStockCount}</Text>
-              <Text style={styles.stockCardSub}>Requires Reorder</Text>
-            </TouchableOpacity>
-
-            {/* OUT_OF_STOCK Card */}
-            <TouchableOpacity style={[styles.stockCard, styles.outOfStockBorder]} onPress={onNavigateToSpareParts}>
-              <View style={styles.stockCardHeader}>
-                <Text style={styles.stockIcon}>🔴</Text>
-                <Text style={styles.stockBadgeTitle}>OUT_OF_STOCK</Text>
-              </View>
-              <Text style={[styles.stockCount, styles.outOfStockCountText]}>{outOfStockCount}</Text>
-              <Text style={styles.stockCardSub}>Depleted Items</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Low-Stock Actionable Batch Restock Panel */}
-        <View style={styles.card}>
-          <View style={styles.restockHeaderRow}>
-            <Text style={styles.cardTitle}>⚡ Quick Batch Restock Panel</Text>
-            {lowStockItems.length > 0 ? (
-              <View style={styles.alertCountBadge}>
-                <Text style={styles.alertCountBadgeText}>{lowStockItems.length} NEEDS RESTOCK</Text>
-              </View>
-            ) : null}
-          </View>
-          <Text style={styles.cardDesc}>
-            One-tap batch restock for low or depleted OEM components in {showroomTitle}.
-          </Text>
-
-          {lowStockItems.length === 0 ? (
-            <View style={styles.allHealthyBox}>
-              <Text style={styles.allHealthyText}>✅ All spare parts are well-stocked above minimum thresholds.</Text>
-            </View>
-          ) : (
-            lowStockItems.slice(0, 5).map((item) => (
-              <View key={item.id} style={styles.restockItemRow}>
-                <View style={styles.restockItemMeta}>
-                  <Text style={styles.restockItemName} numberOfLines={1}>
-                    {item.part_name}
-                  </Text>
-                  <Text style={styles.restockItemSub}>
-                    SKU: {item.part_code} • Qty: <Text style={styles.qtyHighlight}>{item.stock_quantity}</Text> (Min: {item.min_stock_alert})
-                  </Text>
-                </View>
-
-                <View style={styles.batchBtnGroup}>
-                  <TouchableOpacity
-                    style={styles.batchBtn}
-                    onPress={() => handleQuickRestock(item, 5)}
-                  >
-                    <Text style={styles.batchBtnText}>+5</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.batchBtn, styles.batchBtnPrimary]}
-                    onPress={() => handleQuickRestock(item, 10)}
-                  >
-                    <Text style={styles.batchBtnText}>+10</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.batchBtn, styles.batchBtnSuccess]}
-                    onPress={() => handleQuickRestock(item, 25)}
-                  >
-                    <Text style={styles.batchBtnText}>+25</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
-          )}
-
-          <Button
-            title="⚙️ Full Stock Catalog & Custom Restock"
-            onPress={onNavigateToSpareParts || (() => {})}
-            style={styles.manageBtn}
+  const renderCurrentView = () => {
+    switch (currentRoute) {
+      case 'spare_parts':
+        return (
+          <SparePartsScreen
+            onSelectPart={() => {}}
+            onBack={() => setCurrentRoute('dashboard')}
           />
+        );
+      case 'vehicles':
+        return (
+          <VehiclesScreen
+            onSelectVehicle={() => {}}
+            onBack={() => setCurrentRoute('dashboard')}
+          />
+        );
+      case 'profile':
+        return <AdminProfileScreen />;
+      case 'dashboard':
+      default:
+        return (
+          <ScrollView contentContainerStyle={styles.container}>
+            {/* Brand Bar Header */}
+            <View style={styles.brandHeaderBar}>
+              <View style={styles.brandTitleGroup}>
+                <Image
+                  source={require('../../assets/logo.png')}
+                  style={styles.headerLogoIcon}
+                  resizeMode="contain"
+                />
+                <View>
+                  <Text style={styles.badge}>INVENTORY CONTROL PORTAL</Text>
+                  <Text style={styles.title}>Stock Management</Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={logout} style={styles.headerLogoutBtn}>
+                <Ionicons name="log-out-outline" size={22} color="#f43f5e" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Showroom Context */}
+            <View style={styles.showroomCard}>
+              <Text style={styles.cardLabel}>ASSIGNED INVENTORY SCOPE</Text>
+              <Text style={styles.showroomName}>{showroomTitle}</Text>
+              <Text style={styles.showroomCode}>Dealer Code: {showroomCode}</Text>
+            </View>
+
+            {/* Shortcuts */}
+            <View style={styles.shortcutRow}>
+              <TouchableOpacity style={styles.shortcutBtn} onPress={() => setCurrentRoute('vehicles')}>
+                <Text style={styles.shortcutIcon}>🏍️</Text>
+                <Text style={styles.shortcutTitle}>Vehicle Stock Catalog</Text>
+                <Text style={styles.shortcutSub}>Bikes & Cars Stock</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={[styles.shortcutBtn, styles.activePartsShortcut]} onPress={() => setCurrentRoute('spare_parts')}>
+                <Text style={styles.shortcutIcon}>📦</Text>
+                <Text style={styles.shortcutTitle}>Spare Parts Stock</Text>
+                <Text style={styles.shortcutSub}>OEM Parts Control</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Live Stock Level Indicators */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Real-Time Stock Health</Text>
+            </View>
+
+            {loading ? (
+              <ActivityIndicator size="large" color="#06b6d4" style={styles.loader} />
+            ) : (
+              <View style={styles.stockStatusContainer}>
+                <TouchableOpacity style={[styles.stockCard, styles.inStockBorder]} onPress={() => setCurrentRoute('spare_parts')}>
+                  <View style={styles.stockCardHeader}>
+                    <Text style={styles.stockIcon}>🟢</Text>
+                    <Text style={styles.stockBadgeTitle}>IN_STOCK</Text>
+                  </View>
+                  <Text style={[styles.stockCount, styles.inStockCountText]}>{inStockCount}</Text>
+                  <Text style={styles.stockCardSub}>Healthy Stock Levels</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={[styles.stockCard, styles.lowStockBorder]} onPress={() => setCurrentRoute('spare_parts')}>
+                  <View style={styles.stockCardHeader}>
+                    <Text style={styles.stockIcon}>🟡</Text>
+                    <Text style={styles.stockBadgeTitle}>LOW_STOCK</Text>
+                  </View>
+                  <Text style={[styles.stockCount, styles.lowStockCountText]}>{lowStockCount}</Text>
+                  <Text style={styles.stockCardSub}>Requires Reorder</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={[styles.stockCard, styles.outOfStockBorder]} onPress={() => setCurrentRoute('spare_parts')}>
+                  <View style={styles.stockCardHeader}>
+                    <Text style={styles.stockIcon}>🔴</Text>
+                    <Text style={styles.stockBadgeTitle}>OUT_OF_STOCK</Text>
+                  </View>
+                  <Text style={[styles.stockCount, styles.outOfStockCountText]}>{outOfStockCount}</Text>
+                  <Text style={styles.stockCardSub}>Depleted Items</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Low-Stock Actionable Batch Restock Panel */}
+            <View style={styles.card}>
+              <View style={styles.restockHeaderRow}>
+                <Text style={styles.cardTitle}>⚡ Quick Batch Restock Panel</Text>
+                {lowStockItems.length > 0 ? (
+                  <View style={styles.alertCountBadge}>
+                    <Text style={styles.alertCountBadgeText}>{lowStockItems.length} NEEDS RESTOCK</Text>
+                  </View>
+                ) : null}
+              </View>
+              <Text style={styles.cardDesc}>
+                One-tap batch restock for low or depleted OEM components in {showroomTitle}.
+              </Text>
+
+              {lowStockItems.length === 0 ? (
+                <View style={styles.allHealthyBox}>
+                  <Text style={styles.allHealthyText}>✅ All spare parts are well-stocked above minimum thresholds.</Text>
+                </View>
+              ) : (
+                lowStockItems.slice(0, 5).map((item) => (
+                  <View key={item.id} style={styles.restockItemRow}>
+                    <View style={styles.restockItemMeta}>
+                      <Text style={styles.restockItemName} numberOfLines={1}>
+                        {item.part_name}
+                      </Text>
+                      <Text style={styles.restockItemSub}>
+                        SKU: {item.part_code} • Qty: <Text style={styles.qtyHighlight}>{item.stock_quantity}</Text> (Min: {item.min_stock_alert})
+                      </Text>
+                    </View>
+
+                    <View style={styles.batchBtnGroup}>
+                      <TouchableOpacity
+                        style={styles.batchBtn}
+                        onPress={() => handleQuickRestock(item, 5)}
+                      >
+                        <Text style={styles.batchBtnText}>+5</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[styles.batchBtn, styles.batchBtnPrimary]}
+                        onPress={() => handleQuickRestock(item, 10)}
+                      >
+                        <Text style={styles.batchBtnText}>+10</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[styles.batchBtn, styles.batchBtnSuccess]}
+                        onPress={() => handleQuickRestock(item, 25)}
+                      >
+                        <Text style={styles.batchBtnText}>+25</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))
+              )}
+
+              <Button
+                title="⚙️ Full Stock Catalog & Custom Restock"
+                onPress={() => setCurrentRoute('spare_parts')}
+                style={styles.manageBtn}
+              />
+            </View>
+
+            <Button
+              title="Sign Out"
+              onPress={logout}
+              variant="danger"
+              style={styles.logoutBtn}
+            />
+          </ScrollView>
+        );
+    }
+  };
+
+  return (
+    <SafeScreen style={styles.safeContainer}>
+      <View style={styles.topHeader}>
+        <TouchableOpacity
+          onPress={() => setDrawerOpen(true)}
+          style={styles.headerIconButton}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="menu" size={24} color="#f8fafc" />
+        </TouchableOpacity>
+
+        <View style={styles.headerTitleCenter}>
+          <Ionicons name="cube" size={16} color="#06b6d4" style={{ marginRight: 6 }} />
+          <Text style={styles.headerControlTitle}>INVENTORY CONTROL</Text>
         </View>
 
+        <TouchableOpacity
+          onPress={() => setCurrentRoute('profile')}
+          style={styles.headerIconButton}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="person-outline" size={22} color="#f8fafc" />
+        </TouchableOpacity>
+      </View>
 
-        <Button
-          title="Sign Out"
-          onPress={logout}
-          variant="danger"
-          style={styles.logoutBtn}
-        />
-      </ScrollView>
+      <View style={styles.mainContentArea}>
+        {renderCurrentView()}
+      </View>
+
+      <InventoryManagerBottomBar
+        currentRoute={currentRoute}
+        onNavigate={(route) => setCurrentRoute(route)}
+      />
+
+      <InventoryManagerDrawer
+        visible={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        currentRoute={currentRoute}
+        onNavigate={(route) => setCurrentRoute(route)}
+        showroomName={showroomTitle}
+        showroomCode={showroomCode}
+        onLogout={logout}
+      />
     </SafeScreen>
   );
 };
 
 const styles = StyleSheet.create({
+  safeContainer: {
+    flex: 1,
+    backgroundColor: '#070a12',
+  },
+  topHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1e293b',
+    backgroundColor: '#090d16',
+  },
+  headerIconButton: {
+    padding: 6,
+    borderRadius: 8,
+  },
+  headerTitleCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerControlTitle: {
+    color: '#06b6d4',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+  },
+  mainContentArea: {
+    flex: 1,
+  },
   container: {
     padding: 20,
+    paddingBottom: 24,
   },
   brandHeaderBar: {
     flexDirection: 'row',
@@ -259,9 +356,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#334155',
   },
-  header: {
-    marginBottom: 20,
-  },
   badge: {
     color: '#06b6d4',
     fontSize: 10,
@@ -273,11 +367,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     color: '#f8fafc',
-  },
-  subtitle: {
-    fontSize: 13,
-    color: '#94a3b8',
-    lineHeight: 18,
   },
   showroomCard: {
     backgroundColor: '#0f172a',
@@ -429,6 +518,7 @@ const styles = StyleSheet.create({
   },
   logoutBtn: {
     marginTop: 10,
+    marginBottom: 20,
   },
   restockHeaderRow: {
     flexDirection: 'row',
@@ -512,4 +602,3 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 });
-

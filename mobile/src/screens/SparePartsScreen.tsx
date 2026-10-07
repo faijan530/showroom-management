@@ -199,55 +199,63 @@ export const SparePartsScreen: React.FC<SparePartsScreenProps> = ({
         ) : null}
       </View>
 
-      {/* Filter Tabs */}
-      <View style={styles.filterTabs}>
-        {(['ALL', 'BIKE', 'CAR', 'BOTH'] as const).map((tab) => (
-          <TouchableOpacity
-            key={tab}
-            style={[
-              styles.filterTab,
-              selectedType === tab ? styles.activeFilterTab : null,
-            ]}
-            onPress={() => {
-              setSelectedType(tab);
-              setLowStockOnly(false);
-            }}
-          >
-            <Text
+      {/* Filter Horizontal Scroll Bar */}
+      <View style={styles.filterBarWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterRow}
+        >
+          {(['ALL', 'BIKE', 'CAR', 'BOTH'] as const).map((tab) => (
+            <TouchableOpacity
+              key={tab}
               style={[
-                styles.filterTabText,
-                selectedType === tab ? styles.activeFilterTabText : null,
+                styles.filterTab,
+                selectedType === tab && !lowStockOnly ? styles.activeFilterTab : null,
               ]}
+              onPress={() => {
+                setSelectedType(tab);
+                setLowStockOnly(false);
+              }}
+              activeOpacity={0.7}
             >
-              {tab === 'ALL'
-                ? 'ALL'
-                : tab === 'BIKE'
-                ? '🏍️ BIKES'
-                : tab === 'CAR'
-                ? '🚗 CARS'
-                : '⚡ UNIVERSAL'}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text
+                style={[
+                  styles.filterTabText,
+                  selectedType === tab && !lowStockOnly ? styles.activeFilterTabText : null,
+                ]}
+              >
+                {tab === 'ALL'
+                  ? 'ALL'
+                  : tab === 'BIKE'
+                  ? '🏍️ BIKES'
+                  : tab === 'CAR'
+                  ? '🚗 CARS'
+                  : '⚡ UNIVERSAL'}
+              </Text>
+            </TouchableOpacity>
+          ))}
 
-        {isManagerOrAdmin ? (
-          <TouchableOpacity
-            style={[
-              styles.filterTab,
-              lowStockOnly ? styles.activeLowStockTab : null,
-            ]}
-            onPress={() => setLowStockOnly(!lowStockOnly)}
-          >
-            <Text
+          {isManagerOrAdmin ? (
+            <TouchableOpacity
               style={[
-                styles.filterTabText,
-                lowStockOnly ? styles.activeLowStockText : null,
+                styles.filterTab,
+                lowStockOnly ? styles.activeLowStockTab : null,
               ]}
+              onPress={() => setLowStockOnly(!lowStockOnly)}
+              activeOpacity={0.7}
             >
-              ⚠️ LOW STOCK
-            </Text>
-          </TouchableOpacity>
-        ) : null}
+              <Text
+                style={[
+                  styles.filterTabText,
+                  lowStockOnly ? styles.activeLowStockText : null,
+                ]}
+              >
+                ⚠️ LOW STOCK
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+        </ScrollView>
       </View>
 
       {/* Main Parts List */}
@@ -409,20 +417,24 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     fontSize: 16,
   },
-  filterTabs: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 8,
+  filterBarWrapper: {
+    height: 44,
     marginBottom: 14,
   },
-  filterTab: {
-    backgroundColor: '#0f172a',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 8,
+  filterRow: {
+    paddingHorizontal: 20,
     alignItems: 'center',
+    gap: 8,
+  },
+  filterTab: {
+    height: 34,
+    paddingHorizontal: 14,
+    borderRadius: 17,
+    backgroundColor: '#0f172a',
     borderWidth: 1,
     borderColor: '#1e293b',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   activeFilterTab: {
     backgroundColor: '#10b981',
@@ -439,9 +451,11 @@ const styles = StyleSheet.create({
   },
   activeFilterTabText: {
     color: '#ffffff',
+    fontWeight: '800',
   },
   activeLowStockText: {
     color: '#ffffff',
+    fontWeight: '800',
   },
   listContainer: {
     paddingHorizontal: 20,
