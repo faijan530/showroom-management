@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Modal, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Modal, Alert, TouchableOpacity, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeScreen } from '../components/ui/SafeScreen';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -136,24 +137,33 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   return (
     <SafeScreen>
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.appName}>✨ MOTOHUB CUSTOMER PORTAL</Text>
-          <Text style={styles.welcomeText}>Welcome, {user?.full_name || 'Valued Customer'}!</Text>
-          <View style={styles.headerBadgeRow}>
-            <View style={[styles.roleBadge, { backgroundColor: getRoleBadgeColor(user?.role) }]}>
-              <Text style={styles.roleText}>{user?.role || 'USER'} MEMBER</Text>
+        {/* Brand Bar Header */}
+        <View style={styles.brandHeaderBar}>
+          <View style={styles.brandTitleGroup}>
+            <Image
+              source={require('../../assets/logo.png')}
+              style={styles.headerLogoIcon}
+              resizeMode="contain"
+            />
+            <View>
+              <Text style={styles.appName}>MOTOHUB CUSTOMER PORTAL</Text>
+              <Text style={styles.welcomeText}>Welcome, {user?.full_name || 'Valued Customer'}!</Text>
             </View>
-            <Text style={styles.phoneSubText}>📞 {user?.phone}</Text>
           </View>
+          <TouchableOpacity onPress={logout} style={styles.headerLogoutBtn}>
+            <Ionicons name="log-out-outline" size={22} color="#f43f5e" />
+          </TouchableOpacity>
         </View>
 
         {/* Quick Stats Grid */}
         <View style={styles.quickStatsRow}>
           <View style={styles.quickStatCard}>
+            <Ionicons name="chatbubbles-outline" size={20} color="#38bdf8" style={{ marginBottom: 4 }} />
             <Text style={styles.quickStatNumber}>{enquiries.length}</Text>
             <Text style={styles.quickStatLabel}>Active Inquiries</Text>
           </View>
           <View style={[styles.quickStatCard, styles.activeStatCard]}>
+            <Ionicons name="build-outline" size={20} color="#3b82f6" style={{ marginBottom: 4 }} />
             <Text style={[styles.quickStatNumber, styles.activeStatText]}>{serviceJobs.length}</Text>
             <Text style={styles.quickStatLabel}>Service Bookings</Text>
           </View>
@@ -167,7 +177,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               style={[styles.actionChipBtn, styles.actionChipPrimary]}
               onPress={() => setShowServiceModal(true)}
             >
-              <Text style={styles.actionChipIcon}>📅</Text>
+              <Ionicons name="calendar-outline" size={20} color="#ffffff" style={{ marginBottom: 2 }} />
               <Text style={styles.actionChipText}>Book Service</Text>
             </TouchableOpacity>
 
@@ -175,7 +185,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               style={styles.actionChipBtn}
               onPress={onNavigateToGarage || (() => {})}
             >
-              <Text style={styles.actionChipIcon}>🏎️</Text>
+              <Ionicons name="car-sport-outline" size={20} color="#38bdf8" style={{ marginBottom: 2 }} />
               <Text style={styles.actionChipText}>My Garage</Text>
             </TouchableOpacity>
 
@@ -183,7 +193,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
               style={styles.actionChipBtn}
               onPress={onNavigateToVehicles || (() => {})}
             >
-              <Text style={styles.actionChipIcon}>🏍️</Text>
+              <Ionicons name="bicycle-outline" size={20} color="#10b981" style={{ marginBottom: 2 }} />
               <Text style={styles.actionChipText}>Marketplace</Text>
             </TouchableOpacity>
           </View>
@@ -392,21 +402,45 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
   },
+  brandHeaderBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingTop: 4,
+  },
+  brandTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  headerLogoIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+  },
+  headerLogoutBtn: {
+    backgroundColor: '#1e293b',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
   header: {
     marginBottom: 20,
   },
   appName: {
     color: '#3b82f6',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1.5,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   welcomeText: {
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: '800',
     color: '#f9fafb',
-    marginBottom: 6,
   },
   headerBadgeRow: {
     flexDirection: 'row',

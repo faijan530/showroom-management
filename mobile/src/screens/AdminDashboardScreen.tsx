@@ -8,14 +8,15 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  Image,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeScreen } from '../components/ui/SafeScreen';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { useAuthStore } from '../store/auth.store';
 import { getStaffMembers, createStaffMember, StaffMember } from '../lib/staff-api';
 import { getServiceJobs, updateServiceJob, ServiceJobItem } from '../lib/services-api';
-
 import { getAdminShowroomFeedbacks, respondToFeedback, FeedbackItem } from '../lib/feedback-api';
 
 interface AdminDashboardScreenProps {
@@ -163,47 +164,66 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
   return (
     <SafeScreen>
       <ScrollView contentContainerStyle={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.badge}>⚙️ SHOWROOM ADMIN CONTROL</Text>
-          <Text style={styles.title}>Dealership Dashboard</Text>
-          <Text style={styles.subtitle}>
-            Manage staff credentials, inventory, and service operations for {showroomTitle}.
-          </Text>
+        {/* Brand Bar Header */}
+        <View style={styles.brandHeaderBar}>
+          <View style={styles.brandTitleGroup}>
+            <Image
+              source={require('../../assets/logo.png')}
+              style={styles.headerLogoIcon}
+              resizeMode="contain"
+            />
+            <View>
+              <Text style={styles.badge}>MOTOHUB SHOWROOM ADMIN</Text>
+              <Text style={styles.title}>Dealership Control</Text>
+            </View>
+          </View>
+          <TouchableOpacity onPress={logout} style={styles.headerLogoutBtn}>
+            <Ionicons name="log-out-outline" size={22} color="#f43f5e" />
+          </TouchableOpacity>
         </View>
 
-        {/* Showroom Profile Card */}
+        {/* Showroom Profile Banner Card */}
         <View style={styles.showroomCard}>
-          <Text style={styles.cardLabel}>ASSIGNED DEALERSHIP SCOPE</Text>
-          <Text style={styles.showroomName}>{showroomTitle}</Text>
-          <Text style={styles.showroomCode}>Branch Code: {showroomCode}</Text>
+          <Image
+            source={require('../../assets/hero_banner.jpg')}
+            style={styles.bannerImage}
+            resizeMode="cover"
+          />
+          <View style={styles.bannerOverlay}>
+            <Text style={styles.cardLabel}>ASSIGNED SHOWROOM SCOPE</Text>
+            <Text style={styles.showroomName}>{showroomTitle}</Text>
+            <Text style={styles.showroomCode}>Dealer Branch Code: {showroomCode}</Text>
+          </View>
         </View>
 
         {/* Staff & Operations Executive Stats */}
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
+            <Ionicons name="people" size={20} color="#3b82f6" style={{ marginBottom: 4 }} />
             <Text style={styles.statNumber}>{workerCount}</Text>
             <Text style={styles.statLabel}>Technicians</Text>
           </View>
 
           <View style={styles.statCard}>
+            <Ionicons name="cube" size={20} color="#06b6d4" style={{ marginBottom: 4 }} />
             <Text style={[styles.statNumber, styles.inventoryText]}>{inventoryCount}</Text>
-            <Text style={styles.statLabel}>Inventory Managers</Text>
+            <Text style={styles.statLabel}>Stock Managers</Text>
           </View>
 
           <View style={[styles.statCard, styles.jobsStatCard]}>
+            <Ionicons name="construct" size={20} color="#8b5cf6" style={{ marginBottom: 4 }} />
             <Text style={[styles.statNumber, styles.jobsStatText]}>{serviceJobs.length}</Text>
             <Text style={styles.statLabel}>Service Jobs</Text>
           </View>
         </View>
 
-        {/* Action Shortcuts */}
+        {/* Action Shortcuts with Ionicons */}
         <View style={styles.shortcutRow}>
           <TouchableOpacity
             style={styles.shortcutBtn}
             onPress={onNavigateToVehicles}
           >
-            <Text style={styles.shortcutIcon}>🏍️</Text>
+            <Ionicons name="bicycle" size={24} color="#38bdf8" style={{ marginBottom: 4 }} />
             <Text style={styles.shortcutTitle}>Vehicles</Text>
           </TouchableOpacity>
 
@@ -211,7 +231,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
             style={styles.shortcutBtn}
             onPress={onNavigateToSpareParts}
           >
-            <Text style={styles.shortcutIcon}>⚙️</Text>
+            <Ionicons name="hardware-chip" size={24} color="#10b981" style={{ marginBottom: 4 }} />
             <Text style={styles.shortcutTitle}>Spare Parts</Text>
           </TouchableOpacity>
 
@@ -219,7 +239,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
             style={[styles.shortcutBtn, styles.addStaffBtn]}
             onPress={() => setShowModal(true)}
           >
-            <Text style={styles.shortcutIcon}>👤</Text>
+            <Ionicons name="person-add" size={24} color="#8b5cf6" style={{ marginBottom: 4 }} />
             <Text style={styles.shortcutTitle}>Add Staff</Text>
           </TouchableOpacity>
         </View>
@@ -518,21 +538,42 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
   },
-  header: {
-    marginBottom: 20,
+  brandHeaderBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingTop: 4,
+  },
+  brandTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  headerLogoIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+  },
+  headerLogoutBtn: {
+    backgroundColor: '#1e293b',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#334155',
   },
   badge: {
     color: '#8b5cf6',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1.5,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   title: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: '800',
     color: '#f8fafc',
-    marginBottom: 4,
   },
   subtitle: {
     fontSize: 13,
@@ -540,12 +581,24 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   showroomCard: {
-    backgroundColor: '#0f172a',
-    borderRadius: 16,
-    padding: 18,
+    borderRadius: 18,
+    overflow: 'hidden',
     marginBottom: 16,
     borderWidth: 1,
     borderColor: '#8b5cf6',
+    position: 'relative',
+    height: 120,
+  },
+  bannerImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+  },
+  bannerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(7, 10, 18, 0.75)',
+    padding: 16,
+    justifyContent: 'center',
   },
   cardLabel: {
     color: '#94a3b8',

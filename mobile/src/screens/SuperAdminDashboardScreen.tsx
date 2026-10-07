@@ -9,7 +9,9 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  Image,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeScreen } from '../components/ui/SafeScreen';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
@@ -171,13 +173,22 @@ export const SuperAdminDashboardScreen: React.FC = () => {
   return (
     <SafeScreen>
       <ScrollView contentContainerStyle={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.badge}>👑 SUPERADMIN GOVERNANCE</Text>
-          <Text style={styles.title}>Platform Control Center</Text>
-          <Text style={styles.subtitle}>
-            Welcome back, {user?.full_name || 'Superadmin'}. Overview of all registered showrooms.
-          </Text>
+        {/* Brand Bar Header */}
+        <View style={styles.brandHeaderBar}>
+          <View style={styles.brandTitleGroup}>
+            <Image
+              source={require('../../assets/logo.png')}
+              style={styles.headerLogoIcon}
+              resizeMode="contain"
+            />
+            <View>
+              <Text style={styles.badge}>SUPERADMIN GOVERNANCE</Text>
+              <Text style={styles.title}>Platform Control</Text>
+            </View>
+          </View>
+          <TouchableOpacity onPress={logout} style={styles.headerLogoutBtn}>
+            <Ionicons name="log-out-outline" size={22} color="#f43f5e" />
+          </TouchableOpacity>
         </View>
 
         {/* Stats Grid */}
@@ -385,21 +396,45 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
   },
+  brandHeaderBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingTop: 4,
+  },
+  brandTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  headerLogoIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+  },
+  headerLogoutBtn: {
+    backgroundColor: '#1e293b',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
   header: {
     marginBottom: 20,
   },
   badge: {
     color: '#f43f5e',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1.5,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   title: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: '800',
     color: '#f8fafc',
-    marginBottom: 4,
   },
   subtitle: {
     fontSize: 13,

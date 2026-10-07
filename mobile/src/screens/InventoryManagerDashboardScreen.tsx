@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeScreen } from '../components/ui/SafeScreen';
 import { Button } from '../components/ui/Button';
 import { useAuthStore } from '../store/auth.store';
@@ -72,13 +74,22 @@ export const InventoryManagerDashboardScreen: React.FC<InventoryManagerDashboard
   return (
     <SafeScreen>
       <ScrollView contentContainerStyle={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.badge}>INVENTORY CONTROL PORTAL</Text>
-          <Text style={styles.title}>Stock Management</Text>
-          <Text style={styles.subtitle}>
-            Welcome, {user?.full_name || 'Inventory Manager'}! Control stock counts, bikes, cars, and spare parts for {showroomTitle}.
-          </Text>
+        {/* Brand Bar Header */}
+        <View style={styles.brandHeaderBar}>
+          <View style={styles.brandTitleGroup}>
+            <Image
+              source={require('../../assets/logo.png')}
+              style={styles.headerLogoIcon}
+              resizeMode="contain"
+            />
+            <View>
+              <Text style={styles.badge}>INVENTORY CONTROL PORTAL</Text>
+              <Text style={styles.title}>Stock Management</Text>
+            </View>
+          </View>
+          <TouchableOpacity onPress={logout} style={styles.headerLogoutBtn}>
+            <Ionicons name="log-out-outline" size={22} color="#f43f5e" />
+          </TouchableOpacity>
         </View>
 
         {/* Showroom Context */}
@@ -223,21 +234,45 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
   },
+  brandHeaderBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingTop: 4,
+  },
+  brandTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  headerLogoIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+  },
+  headerLogoutBtn: {
+    backgroundColor: '#1e293b',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
   header: {
     marginBottom: 20,
   },
   badge: {
     color: '#06b6d4',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1.5,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   title: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: '800',
     color: '#f8fafc',
-    marginBottom: 4,
   },
   subtitle: {
     fontSize: 13,

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, TouchableOpacity, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeScreen } from '../components/ui/SafeScreen';
 import { Button } from '../components/ui/Button';
 import { useAuthStore } from '../store/auth.store';
@@ -49,13 +50,22 @@ export const WorkerDashboardScreen: React.FC = () => {
   return (
     <SafeScreen>
       <ScrollView contentContainerStyle={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.badge}>⚡ TECHNICIAN SERVICE BAY</Text>
-          <Text style={styles.title}>Service Task Queue</Text>
-          <Text style={styles.subtitle}>
-            Welcome, {user?.full_name || 'Worker'}! Manage assigned repair and servicing jobs for {showroomTitle}.
-          </Text>
+        {/* Brand Bar Header */}
+        <View style={styles.brandHeaderBar}>
+          <View style={styles.brandTitleGroup}>
+            <Image
+              source={require('../../assets/logo.png')}
+              style={styles.headerLogoIcon}
+              resizeMode="contain"
+            />
+            <View>
+              <Text style={styles.badge}>TECHNICIAN SERVICE BAY</Text>
+              <Text style={styles.title}>Service Task Queue</Text>
+            </View>
+          </View>
+          <TouchableOpacity onPress={logout} style={styles.headerLogoutBtn}>
+            <Ionicons name="log-out-outline" size={22} color="#f43f5e" />
+          </TouchableOpacity>
         </View>
 
         {/* Showroom Context */}
@@ -152,21 +162,45 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
   },
+  brandHeaderBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingTop: 4,
+  },
+  brandTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  headerLogoIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+  },
+  headerLogoutBtn: {
+    backgroundColor: '#1e293b',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
   header: {
     marginBottom: 20,
   },
   badge: {
     color: '#f59e0b',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1.5,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   title: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: '800',
     color: '#f8fafc',
-    marginBottom: 4,
   },
   subtitle: {
     fontSize: 13,

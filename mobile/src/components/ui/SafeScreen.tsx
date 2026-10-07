@@ -9,7 +9,7 @@ interface SafeScreenProps {
 export const SafeScreen: React.FC<SafeScreenProps> = ({ children, style }) => {
   return (
     <SafeAreaView style={[styles.container, style]}>
-      <StatusBar barStyle="light-content" backgroundColor="#090d16" />
+      <StatusBar barStyle="light-content" backgroundColor="#070a12" translucent={false} />
       <View style={styles.content}>{children}</View>
     </SafeAreaView>
   );
@@ -18,10 +18,11 @@ export const SafeScreen: React.FC<SafeScreenProps> = ({ children, style }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#090d16',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    backgroundColor: '#070a12',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 34) + 10 : 0,
   },
   content: {
     flex: 1,
   },
 });
+
