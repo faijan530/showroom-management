@@ -21,11 +21,13 @@ import { getServiceJobs, updateServiceJob, ServiceJobItem } from '../lib/service
 import { getAdminShowroomFeedbacks, respondToFeedback, FeedbackItem } from '../lib/feedback-api';
 import { getSpareParts } from '../lib/spare-parts-api';
 import { SparePart } from '../types/spare-part';
+import { getShowroomEnquiries, EnquiryItem } from '../lib/enquiries-api';
 
 // Dedicated Navigation & Sub-screens
 import { AdminDrawer, AdminRouteName } from '../components/navigation/AdminDrawer';
 import { AdminBottomBar } from '../components/navigation/AdminBottomBar';
 import { AdminServiceJobsScreen } from './AdminServiceJobsScreen';
+import { AdminEnquiriesScreen } from './AdminEnquiriesScreen';
 import { AdminReviewsScreen } from './AdminReviewsScreen';
 import { AdminStaffScreen } from './AdminStaffScreen';
 import { AdminReportsScreen } from './AdminReportsScreen';
@@ -50,6 +52,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = () => {
   const [serviceJobs, setServiceJobs] = useState<ServiceJobItem[]>([]);
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
   const [spareParts, setSpareParts] = useState<SparePart[]>([]);
+  const [enquiries, setEnquiries] = useState<EnquiryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -73,21 +76,24 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = () => {
 
   const fetchAdminData = async () => {
     try {
-      const [staffData, jobsData, feedbackData, partsData] = await Promise.all([
+      const [staffData, jobsData, feedbackData, partsData, enquiriesData] = await Promise.all([
         getStaffMembers().catch(() => []),
         getServiceJobs().catch(() => []),
         getAdminShowroomFeedbacks().catch(() => []),
         getSpareParts({ showroom_id: user?.showroom_id || undefined }).catch(() => []),
+        getShowroomEnquiries().catch(() => []),
       ]);
       setStaff(staffData);
       setServiceJobs(jobsData);
       setFeedbacks(feedbackData);
       setSpareParts(partsData);
+      setEnquiries(enquiriesData);
     } catch {
       setStaff([]);
       setServiceJobs([]);
       setFeedbacks([]);
       setSpareParts([]);
+      setEnquiries([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -231,6 +237,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = () => {
             onAssignTechnician={(job) => setSelectedJob(job)}
           />
         );
+      case 'enquiries':
+        return (
+          <AdminEnquiriesScreen
+            enquiries={enquiries}
+            onRefresh={fetchAdminData}
+          />
+        );
       case 'customer_reviews':
         return (
           <AdminReviewsScreen
@@ -341,8 +354,18 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Quick Actions Grid (3-Column) */}
+            {/* Quick Actions Grid */}
             <View style={styles.quickActionsGrid}>
+              <TouchableOpacity
+                style={styles.quickActionCard}
+                onPress={() => setCurrentRoute('enquiries')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="chatbubbles" size={24} color="#a855f7" />
+                <Text style={styles.quickActionLabel}>Inquiries</Text>
+                <Ionicons name="chevron-forward" size={14} color="#64748b" style={{ marginTop: 2 }} />
+              </TouchableOpacity>
+
               <TouchableOpacity
                 style={styles.quickActionCard}
                 onPress={() => setCurrentRoute('vehicles')}

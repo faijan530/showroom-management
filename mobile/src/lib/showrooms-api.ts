@@ -6,6 +6,11 @@ export async function getShowrooms(): Promise<Showroom[]> {
   return response.data.data.showrooms || [];
 }
 
+export async function getPublicShowrooms(): Promise<Showroom[]> {
+  const response = await apiClient.get('/showrooms');
+  return response.data.data.showrooms || [];
+}
+
 export async function createShowroom(input: CreateShowroomInput): Promise<Showroom> {
   const response = await apiClient.post('/superadmin/showrooms', input);
   return response.data.data.showroom;

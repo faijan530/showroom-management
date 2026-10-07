@@ -18,6 +18,8 @@ export type InventoryManagerRouteName =
   | 'dashboard'
   | 'spare_parts'
   | 'vehicles'
+  | 'service_jobs'
+  | 'enquiries'
   | 'profile';
 
 interface InventoryManagerDrawerProps {
@@ -135,6 +137,10 @@ export const InventoryManagerDrawer: React.FC<InventoryManagerDrawerProps> = ({
           {/* Links */}
           <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
             {renderNavItem('dashboard', 'Stock Dashboard', 'home')}
+
+            <Text style={styles.sectionHeader}>OPERATIONS & DISPATCH</Text>
+            {renderNavItem('service_jobs', 'Service Jobs & Re-assign', 'construct-outline')}
+            {renderNavItem('enquiries', 'Inquiries & Test Rides', 'chatbubbles-outline')}
 
             <Text style={styles.sectionHeader}>INVENTORY CONTROL</Text>
             {renderNavItem('spare_parts', 'Spare Parts Catalog', 'cube-outline')}

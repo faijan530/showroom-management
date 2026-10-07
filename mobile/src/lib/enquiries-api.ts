@@ -43,3 +43,23 @@ export async function getCustomerEnquiries(): Promise<EnquiryItem[]> {
   const response = await apiClient.get('/enquiries');
   return response.data.data.enquiries || [];
 }
+
+export async function getShowroomEnquiries(params?: {
+  status?: EnquiryStatus;
+  enquiry_type?: EnquiryType;
+}): Promise<EnquiryItem[]> {
+  const response = await apiClient.get('/enquiries', { params });
+  return response.data.data.enquiries || [];
+}
+
+export async function respondToEnquiry(
+  id: string,
+  input: {
+    status?: EnquiryStatus;
+    response_notes?: string;
+  }
+): Promise<EnquiryItem> {
+  const response = await apiClient.put(`/enquiries/${id}`, input);
+  return response.data.data.enquiry;
+}
+

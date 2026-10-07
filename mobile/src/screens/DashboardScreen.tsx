@@ -6,10 +6,20 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useAuthStore } from '../store/auth.store';
 import { getCustomerEnquiries, EnquiryItem } from '../lib/enquiries-api';
-import { getServiceJobs, createServiceJob, ServiceJobItem } from '../lib/services-api';
+import {
+  getServiceJobs,
+  createServiceJob,
+  createCustomerServiceRequest,
+  getCustomerServiceRequests,
+  ServiceJobItem,
+} from '../lib/services-api';
+import { getPublicShowrooms } from '../lib/showrooms-api';
+import { Showroom } from '../types/showroom';
 import { CustomerDrawer, CustomerRouteName } from '../components/navigation/CustomerDrawer';
 import { CustomerBottomBar } from '../components/navigation/CustomerBottomBar';
 import { CustomerGarageScreen } from './CustomerGarageScreen';
+import { CustomerEnquiriesScreen } from './CustomerEnquiriesScreen';
+import { CustomerServiceTrackerScreen } from './CustomerServiceTrackerScreen';
 import { VehiclesScreen } from './VehiclesScreen';
 import { SparePartsScreen } from './SparePartsScreen';
 import { AdminProfileScreen } from './AdminProfileScreen';
@@ -32,6 +42,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
   const [enquiries, setEnquiries] = useState<EnquiryItem[]>([]);
   const [serviceJobs, setServiceJobs] = useState<ServiceJobItem[]>([]);
+  const [showrooms, setShowrooms] = useState<Showroom[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Service Booking Modal state
@@ -39,6 +50,16 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const [vehicleType, setVehicleType] = useState<'BIKE' | 'CAR'>('BIKE');
   const [vehicleDetails, setVehicleDetails] = useState('');
   const [serviceDesc, setServiceDesc] = useState('');
+  const [selectedShowroomId, setSelectedShowroomId] = useState('');
+  const [preferredDate, setPreferredDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  });
+  const [timeSlot, setTimeSlot] = useState('09:00 AM - 11:00 AM');
+  const [isCustomTime, setIsCustomTime] = useState(false);
+  const [customTime, setCustomTime] = useState('');
+  const [selectedJobForTracker, setSelectedJobForTracker] = useState<string | null>(null);
   const [isSubmittingService, setIsSubmittingService] = useState(false);
 
   useEffect(() => {
@@ -54,15 +75,21 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
   const fetchCustomerData = async () => {
     try {
-      const [enquiryData, jobsData] = await Promise.all([
+      const [enquiryData, jobsData, showroomsData] = await Promise.all([
         getCustomerEnquiries().catch(() => []),
-        getServiceJobs().catch(() => []),
+        getCustomerServiceRequests().catch(() => getServiceJobs().catch(() => [])),
+        getPublicShowrooms().catch(() => []),
       ]);
       setEnquiries(enquiryData);
       setServiceJobs(jobsData);
+      setShowrooms(showroomsData);
+      if (showroomsData.length > 0 && !selectedShowroomId) {
+        setSelectedShowroomId(showroomsData[0].id);
+      }
     } catch {
       setEnquiries([]);
       setServiceJobs([]);
+      setShowrooms([]);
     } finally {
       setLoading(false);
     }
@@ -81,6 +108,15 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       Alert.alert('Sign In Required', 'Please sign in to book a service appointment.');
       return;
     }
+
+    const finalTimeSlot = isCustomTime ? customTime.trim() : timeSlot;
+    if (isCustomTime && !customTime.trim()) {
+      Alert.alert('Time Required', 'Please enter your preferred manual appointment time.');
+      return;
+    }
+
+    const targetShowroomId = selectedShowroomId || (showrooms.length > 0 ? showrooms[0].id : undefined);
+
     try {
       setIsSubmittingService(true);
       let cleanPhone = user.phone ? user.phone.replace(/\D/g, '') : '';
@@ -91,22 +127,36 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         cleanPhone = '9876543210';
       }
 
-      await createServiceJob({
-        customer_name: user.full_name || 'Customer',
-        customer_phone: cleanPhone,
-        vehicle_type: vehicleType,
-        vehicle_details: vehicleDetails.trim(),
-        service_description: serviceDesc.trim(),
-      });
+      if (targetShowroomId) {
+        await createCustomerServiceRequest({
+          target_showroom_id: targetShowroomId,
+          vehicle_type: vehicleType,
+          vehicle_details: vehicleDetails.trim(),
+          service_description: serviceDesc.trim(),
+          preferred_date: preferredDate,
+          time_slot: finalTimeSlot,
+        });
+      } else {
+        await createServiceJob({
+          customer_name: user.full_name || 'Customer',
+          customer_phone: cleanPhone,
+          vehicle_type: vehicleType,
+          vehicle_details: vehicleDetails.trim(),
+          service_description: serviceDesc.trim(),
+        });
+      }
 
       Alert.alert(
-        'Service Appointment Booked',
-        `Your service request for ${vehicleDetails} has been received. Our technicians will inspect your request shortly!`
+        'Service Appointment Confirmed',
+        `Your service booking for ${vehicleDetails} is scheduled for ${preferredDate} at ${finalTimeSlot}. Track live workshop progress online!`
       );
       setShowServiceModal(false);
       setVehicleDetails('');
       setServiceDesc('');
-      fetchCustomerData();
+      setCustomTime('');
+      setIsCustomTime(false);
+      await fetchCustomerData();
+      setCurrentRoute('service_tracker');
     } catch (err: any) {
       Alert.alert('Booking Failed', err.message || 'Failed to submit service booking.');
     } finally {
@@ -152,6 +202,24 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             onBack={() => setCurrentRoute('dashboard')}
           />
         );
+      case 'inquiries':
+        return (
+          <CustomerEnquiriesScreen
+            onBack={() => setCurrentRoute('dashboard')}
+            enquiries={enquiries}
+            onRefresh={fetchCustomerData}
+          />
+        );
+      case 'service_tracker':
+        return (
+          <CustomerServiceTrackerScreen
+            onBack={() => setCurrentRoute('dashboard')}
+            serviceJobs={serviceJobs}
+            onRefresh={fetchCustomerData}
+            onBookNewService={() => setShowServiceModal(true)}
+            selectedJobId={selectedJobForTracker}
+          />
+        );
       case 'profile':
         return <AdminProfileScreen />;
       case 'dashboard':
@@ -176,17 +244,28 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
             {/* Quick Stats (Compact 2-Column) */}
             <View style={styles.statsRow}>
-              <View style={styles.statCard}>
+              <TouchableOpacity
+                style={styles.statCard}
+                onPress={() => setCurrentRoute('inquiries')}
+                activeOpacity={0.8}
+              >
                 <Ionicons name="chatbubbles-outline" size={20} color="#38bdf8" style={{ marginBottom: 4 }} />
                 <Text style={styles.statNumber}>{enquiries.length}</Text>
-                <Text style={styles.statLabel}>Active Inquiries</Text>
-              </View>
+                <Text style={styles.statLabel}>Inquiries & Test Rides</Text>
+              </TouchableOpacity>
 
-              <View style={[styles.statCard, styles.activeStatCard]}>
+              <TouchableOpacity
+                style={[styles.statCard, styles.activeStatCard]}
+                onPress={() => {
+                  setSelectedJobForTracker(null);
+                  setCurrentRoute('service_tracker');
+                }}
+                activeOpacity={0.8}
+              >
                 <Ionicons name="construct-outline" size={20} color="#3b82f6" style={{ marginBottom: 4 }} />
                 <Text style={[styles.statNumber, styles.activeStatText]}>{serviceJobs.length}</Text>
                 <Text style={styles.statLabel}>Service Bookings</Text>
-              </View>
+              </TouchableOpacity>
             </View>
 
             {/* Quick Action Grid (3-Column) */}
@@ -251,27 +330,48 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 {serviceJobs.slice(0, 3).map((job) => {
                   const badge = getStatusBadge(job.status);
                   return (
-                    <View key={job.id} style={styles.activityCard}>
+                    <TouchableOpacity
+                      key={job.id}
+                      style={styles.activityCard}
+                      onPress={() => {
+                        setSelectedJobForTracker(job.id);
+                        setCurrentRoute('service_tracker');
+                      }}
+                      activeOpacity={0.8}
+                    >
                       <View style={styles.activityHeader}>
                         <View style={{ flex: 1 }}>
                           <Text style={styles.activityTitle}>{job.vehicle_details} ({job.vehicle_type})</Text>
                           <Text style={styles.activitySub}>Issue: {job.service_description}</Text>
+                          {job.time_slot ? (
+                            <Text style={styles.slotText}>⏰ Time Slot: {job.time_slot}</Text>
+                          ) : null}
                           {job.assigned_worker_name ? (
                             <Text style={styles.activityTech}>Technician: {job.assigned_worker_name}</Text>
                           ) : null}
                         </View>
-                        <View style={[styles.statusBadge, { backgroundColor: badge.bg, borderColor: badge.border }]}>
-                          <Text style={[styles.statusText, { color: badge.text }]}>{job.status}</Text>
+                        <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                          <View style={[styles.statusBadge, { backgroundColor: badge.bg, borderColor: badge.border }]}>
+                            <Text style={[styles.statusText, { color: badge.text }]}>{job.status}</Text>
+                          </View>
+                          <View style={styles.trackPill}>
+                            <Text style={styles.trackPillText}>Live Tracker ➔</Text>
+                          </View>
                         </View>
                       </View>
-                    </View>
+                    </TouchableOpacity>
                   );
                 })}
 
                 {enquiries.slice(0, 2).map((item) => {
                   const badge = getStatusBadge(item.status);
                   return (
-                    <View key={item.id} style={styles.activityCard}>
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.activityCard}
+                      onPress={() => setCurrentRoute('inquiries')}
+                      activeOpacity={0.8}
+                    >
                       <View style={styles.activityHeader}>
                         <View style={{ flex: 1 }}>
                           <Text style={styles.activityTitle}>Inquiry: {item.enquiry_type.replace('_', ' ')}</Text>
@@ -284,7 +384,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                           <Text style={[styles.statusText, { color: badge.text }]}>{item.status}</Text>
                         </View>
                       </View>
-                    </View>
+                    </TouchableOpacity>
                   );
                 })}
               </View>
@@ -348,48 +448,222 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       {/* Modal: Book Service Appointment */}
       <Modal visible={showServiceModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Book Service Appointment</Text>
-            <Text style={styles.modalSubtitle}>Request servicing for your bike or car at the dealership.</Text>
-
-            <View style={styles.typeSelectorRow}>
-              <TouchableOpacity
-                style={[styles.typeBtn, vehicleType === 'BIKE' && styles.typeBtnActive]}
-                onPress={() => setVehicleType('BIKE')}
-              >
-                <Text style={[styles.typeBtnText, vehicleType === 'BIKE' && styles.typeBtnTextActive]}>
-                  🏍️ Bike / Scooter
+          <View style={[styles.modalContent, { maxHeight: '90%' }]}>
+            <View style={styles.modalHeaderRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalTitle}>Book Service Appointment</Text>
+                <Text style={styles.modalSubtitle}>
+                  Schedule certified bike or car servicing with live repair tracking.
                 </Text>
-              </TouchableOpacity>
+              </View>
               <TouchableOpacity
-                style={[styles.typeBtn, vehicleType === 'CAR' && styles.typeBtnActive]}
-                onPress={() => setVehicleType('CAR')}
+                onPress={() => setShowServiceModal(false)}
+                style={{ padding: 4 }}
               >
-                <Text style={[styles.typeBtnText, vehicleType === 'CAR' && styles.typeBtnTextActive]}>
-                  🚗 Car
-                </Text>
+                <Ionicons name="close" size={22} color="#94a3b8" />
               </TouchableOpacity>
             </View>
 
-            <Input
-              label="Vehicle Model & Reg Number *"
-              placeholder="e.g. Hero Splendor Plus (MH 12 AB 1234)"
-              value={vehicleDetails}
-              onChangeText={setVehicleDetails}
-            />
+            <ScrollView showsVerticalScrollIndicator={false} style={{ marginVertical: 6 }}>
+              {/* Showroom Outlet Selector */}
+              {showrooms.length > 0 ? (
+                <View style={{ marginBottom: 12 }}>
+                  <Text style={styles.fieldSectionLabel}>Select Service Showroom:</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
+                  >
+                    {showrooms.map((sh) => {
+                      const isSelected = (selectedShowroomId || showrooms[0]?.id) === sh.id;
+                      return (
+                        <TouchableOpacity
+                          key={sh.id}
+                          style={[
+                            styles.outletChip,
+                            isSelected && styles.outletChipActive,
+                          ]}
+                          onPress={() => setSelectedShowroomId(sh.id)}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons
+                            name="business-outline"
+                            size={13}
+                            color={isSelected ? '#3b82f6' : '#94a3b8'}
+                          />
+                          <Text
+                            style={[
+                              styles.outletChipText,
+                              isSelected && styles.outletChipTextActive,
+                            ]}
+                          >
+                            {sh.name} ({sh.code})
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              ) : null}
 
-            <Input
-              label="Service Issue Description *"
-              placeholder="e.g. Annual general service, oil change, brake check"
-              value={serviceDesc}
-              onChangeText={setServiceDesc}
-              multiline
-              numberOfLines={3}
-            />
+              {/* Vehicle Type */}
+              <Text style={styles.fieldSectionLabel}>Vehicle Type:</Text>
+              <View style={styles.typeSelectorRow}>
+                <TouchableOpacity
+                  style={[styles.typeBtn, vehicleType === 'BIKE' && styles.typeBtnActive]}
+                  onPress={() => setVehicleType('BIKE')}
+                >
+                  <Text style={[styles.typeBtnText, vehicleType === 'BIKE' && styles.typeBtnTextActive]}>
+                    🏍️ Bike / Scooter
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.typeBtn, vehicleType === 'CAR' && styles.typeBtnActive]}
+                  onPress={() => setVehicleType('CAR')}
+                >
+                  <Text style={[styles.typeBtnText, vehicleType === 'CAR' && styles.typeBtnTextActive]}>
+                    🚗 Car
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <Input
+                label="Vehicle Model & Reg Number *"
+                placeholder="e.g. Hero Splendor Plus (MH 12 AB 1234)"
+                value={vehicleDetails}
+                onChangeText={setVehicleDetails}
+              />
+
+              {/* Preferred Date with Quick Select */}
+              <View style={{ marginBottom: 12 }}>
+                <Text style={styles.fieldSectionLabel}>Preferred Service Date:</Text>
+                <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8 }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.quickDateBtn,
+                      preferredDate === new Date().toISOString().split('T')[0] && styles.quickDateBtnActive,
+                    ]}
+                    onPress={() => setPreferredDate(new Date().toISOString().split('T')[0])}
+                  >
+                    <Text style={styles.quickDateText}>Today</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.quickDateBtn,
+                      (() => {
+                        const d = new Date();
+                        d.setDate(d.getDate() + 1);
+                        return preferredDate === d.toISOString().split('T')[0];
+                      })() && styles.quickDateBtnActive,
+                    ]}
+                    onPress={() => {
+                      const d = new Date();
+                      d.setDate(d.getDate() + 1);
+                      setPreferredDate(d.toISOString().split('T')[0]);
+                    }}
+                  >
+                    <Text style={styles.quickDateText}>Tomorrow</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.quickDateBtn,
+                      (() => {
+                        const d = new Date();
+                        d.setDate(d.getDate() + 2);
+                        return preferredDate === d.toISOString().split('T')[0];
+                      })() && styles.quickDateBtnActive,
+                    ]}
+                    onPress={() => {
+                      const d = new Date();
+                      d.setDate(d.getDate() + 2);
+                      setPreferredDate(d.toISOString().split('T')[0]);
+                    }}
+                  >
+                    <Text style={styles.quickDateText}>In 2 Days</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Input
+                  label="Date (YYYY-MM-DD) *"
+                  placeholder="2026-10-09"
+                  value={preferredDate}
+                  onChangeText={setPreferredDate}
+                />
+              </View>
+
+              {/* Time Slot & Manual Time Selection */}
+              <View style={{ marginBottom: 14 }}>
+                <Text style={styles.fieldSectionLabel}>Appointment Time Slot:</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                  {['09:00 AM - 11:00 AM', '11:00 AM - 01:00 PM', '02:00 PM - 04:00 PM', '04:00 PM - 06:00 PM'].map(
+                    (slot) => {
+                      const isSelected = !isCustomTime && timeSlot === slot;
+                      return (
+                        <TouchableOpacity
+                          key={slot}
+                          style={[styles.slotChip, isSelected && styles.slotChipActive]}
+                          onPress={() => {
+                            setTimeSlot(slot);
+                            setIsCustomTime(false);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons
+                            name="time-outline"
+                            size={12}
+                            color={isSelected ? '#3b82f6' : '#94a3b8'}
+                          />
+                          <Text style={[styles.slotChipText, isSelected && styles.slotChipTextActive]}>
+                            {slot}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    }
+                  )}
+
+                  {/* Manual / Custom Time Button */}
+                  <TouchableOpacity
+                    style={[styles.slotChip, isCustomTime && styles.slotChipActive]}
+                    onPress={() => setIsCustomTime(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name="create-outline"
+                      size={12}
+                      color={isCustomTime ? '#3b82f6' : '#94a3b8'}
+                    />
+                    <Text style={[styles.slotChipText, isCustomTime && styles.slotChipTextActive]}>
+                      ⏱️ Custom / Manual Time
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Custom Manual Time Input */}
+                {isCustomTime ? (
+                  <Input
+                    label="Enter Manual Booking Time *"
+                    placeholder="e.g. 10:30 AM or 03:15 PM"
+                    value={customTime}
+                    onChangeText={setCustomTime}
+                  />
+                ) : null}
+              </View>
+
+              <Input
+                label="Service Issue Description *"
+                placeholder="e.g. Annual general service, engine oil change, brake check"
+                value={serviceDesc}
+                onChangeText={setServiceDesc}
+                multiline
+                numberOfLines={3}
+              />
+            </ScrollView>
 
             <View style={styles.modalActions}>
               <Button
-                title="Submit Service Request"
+                title="Confirm & Book Service"
                 onPress={handleCreateServiceBooking}
                 isLoading={isSubmittingService}
               />
@@ -686,5 +960,103 @@ const styles = StyleSheet.create({
   modalActions: {
     gap: 10,
     marginTop: 12,
+  },
+  slotText: {
+    color: '#f59e0b',
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 3,
+  },
+  trackPill: {
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.3)',
+  },
+  trackPillText: {
+    color: '#3b82f6',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+  },
+  fieldSectionLabel: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+  outletChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#1e293b',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  outletChipActive: {
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    borderColor: '#3b82f6',
+  },
+  outletChipText: {
+    color: '#94a3b8',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  outletChipTextActive: {
+    color: '#3b82f6',
+    fontWeight: '700',
+  },
+  quickDateBtn: {
+    flex: 1,
+    backgroundColor: '#1e293b',
+    paddingVertical: 7,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  quickDateBtnActive: {
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    borderColor: '#3b82f6',
+  },
+  quickDateText: {
+    color: '#cbd5e1',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  slotChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#1e293b',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  slotChipActive: {
+    backgroundColor: 'rgba(59, 130, 246, 0.18)',
+    borderColor: '#3b82f6',
+  },
+  slotChipText: {
+    color: '#94a3b8',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  slotChipTextActive: {
+    color: '#38bdf8',
+    fontWeight: '800',
   },
 });

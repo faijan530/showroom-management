@@ -17,6 +17,8 @@ const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.82, 320);
 export type CustomerRouteName =
   | 'dashboard'
   | 'garage'
+  | 'service_tracker'
+  | 'inquiries'
   | 'vehicles'
   | 'spare_parts'
   | 'profile';
@@ -137,8 +139,10 @@ export const CustomerDrawer: React.FC<CustomerDrawerProps> = ({
           <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
             {renderNavItem('dashboard', 'Customer Portal', 'home')}
 
-            <Text style={styles.sectionHeader}>MY VEHICLES</Text>
+            <Text style={styles.sectionHeader}>MY ACTIVITIES</Text>
             {renderNavItem('garage', 'My Garage & Service Log', 'car-sport-outline')}
+            {renderNavItem('service_tracker', 'Live Service Tracker', 'construct-outline')}
+            {renderNavItem('inquiries', 'Inquiries & Test Rides', 'chatbubbles-outline')}
 
             <Text style={styles.sectionHeader}>SHOWROOM CATALOG</Text>
             {renderNavItem('vehicles', 'Vehicle Marketplace', 'bicycle-outline')}

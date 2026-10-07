@@ -17,6 +17,7 @@ const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.82, 320);
 export type AdminRouteName =
   | 'dashboard'
   | 'service_jobs'
+  | 'enquiries'
   | 'worker_dispatch'
   | 'customer_reviews'
   | 'staff_directory'
@@ -161,6 +162,7 @@ export const AdminDrawer: React.FC<AdminDrawerProps> = ({
             {/* SECTION 1: OPERATIONS */}
             <Text style={styles.sectionHeader}>OPERATIONS</Text>
             {renderNavItem('service_jobs', 'Service Jobs', 'construct-outline')}
+            {renderNavItem('enquiries', 'Inquiries & Test Rides', 'chatbubbles-outline')}
             {renderNavItem('worker_dispatch', 'Worker Dispatch', 'people-outline')}
             {renderNavItem('customer_reviews', 'Customer Reviews', 'star-outline')}
 

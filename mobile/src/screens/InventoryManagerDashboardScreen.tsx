@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeScreen } from '../components/ui/SafeScreen';
@@ -15,10 +16,15 @@ import { Button } from '../components/ui/Button';
 import { useAuthStore } from '../store/auth.store';
 import { getSpareParts, updateSparePart } from '../lib/spare-parts-api';
 import { SparePart } from '../types/spare-part';
+import { getStaffMembers, StaffMember } from '../lib/staff-api';
+import { getServiceJobs, updateServiceJob, ServiceJobItem } from '../lib/services-api';
+import { getShowroomEnquiries, EnquiryItem } from '../lib/enquiries-api';
 import { InventoryManagerDrawer, InventoryManagerRouteName } from '../components/navigation/InventoryManagerDrawer';
 import { InventoryManagerBottomBar } from '../components/navigation/InventoryManagerBottomBar';
 import { SparePartsScreen } from './SparePartsScreen';
 import { VehiclesScreen } from './VehiclesScreen';
+import { AdminServiceJobsScreen } from './AdminServiceJobsScreen';
+import { AdminEnquiriesScreen } from './AdminEnquiriesScreen';
 import { AdminProfileScreen } from './AdminProfileScreen';
 
 interface InventoryManagerDashboardScreenProps {
@@ -33,21 +39,39 @@ export const InventoryManagerDashboardScreen: React.FC<InventoryManagerDashboard
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const [parts, setParts] = useState<SparePart[]>([]);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [serviceJobs, setServiceJobs] = useState<ServiceJobItem[]>([]);
+  const [enquiries, setEnquiries] = useState<EnquiryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchStockSummary = async () => {
+  // Assign Worker / Re-assignment Modal State
+  const [selectedJob, setSelectedJob] = useState<ServiceJobItem | null>(null);
+  const [isAssigning, setIsAssigning] = useState(false);
+
+  const fetchManagerData = async () => {
     try {
-      const data = await getSpareParts({ showroom_id: user?.showroom_id || undefined });
-      setParts(data);
+      const [partsData, staffData, jobsData, enquiriesData] = await Promise.all([
+        getSpareParts({ showroom_id: user?.showroom_id || undefined }).catch(() => []),
+        getStaffMembers().catch(() => []),
+        getServiceJobs().catch(() => []),
+        getShowroomEnquiries().catch(() => []),
+      ]);
+      setParts(partsData);
+      setStaff(staffData);
+      setServiceJobs(jobsData);
+      setEnquiries(enquiriesData);
     } catch {
       setParts([]);
+      setStaff([]);
+      setServiceJobs([]);
+      setEnquiries([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchStockSummary();
+    fetchManagerData();
   }, []);
 
   const showroomTitle = user?.showroom_name || user?.showroom?.name || 'Dealership Inventory';
@@ -65,14 +89,34 @@ export const InventoryManagerDashboardScreen: React.FC<InventoryManagerDashboard
       );
       await updateSparePart(part.id, { stock_quantity: newQty });
       Alert.alert('Restock Successful', `Added +${addition} items to ${part.part_name}. New stock: ${newQty}`);
-      fetchStockSummary();
+      fetchManagerData();
     } catch (err: any) {
       Alert.alert('Restock Error', err.message || 'Could not update stock.');
-      fetchStockSummary();
+      fetchManagerData();
+    }
+  };
+
+  const handleAssignTechnician = async (workerId: string, workerName: string) => {
+    if (!selectedJob) return;
+    try {
+      setIsAssigning(true);
+      await updateServiceJob(selectedJob.id, {
+        assigned_worker_id: workerId,
+        status: 'ASSIGNED',
+      });
+
+      Alert.alert('Worker Assigned', `Allocated service job for ${selectedJob.customer_name} to ${workerName}.`);
+      setSelectedJob(null);
+      fetchManagerData();
+    } catch (err: any) {
+      Alert.alert('Assignment Failed', err.message || 'Failed to assign technician.');
+    } finally {
+      setIsAssigning(false);
     }
   };
 
   const lowStockItems = parts.filter((p) => p.stock_quantity <= p.min_stock_alert);
+  const workersList = staff.filter((s) => s.role === 'WORKER');
 
   const renderCurrentView = () => {
     switch (currentRoute) {
@@ -88,6 +132,22 @@ export const InventoryManagerDashboardScreen: React.FC<InventoryManagerDashboard
           <VehiclesScreen
             onSelectVehicle={() => {}}
             onBack={() => setCurrentRoute('dashboard')}
+          />
+        );
+      case 'service_jobs':
+        return (
+          <AdminServiceJobsScreen
+            serviceJobs={serviceJobs}
+            staff={staff}
+            onRefresh={fetchManagerData}
+            onAssignTechnician={(job) => setSelectedJob(job)}
+          />
+        );
+      case 'enquiries':
+        return (
+          <AdminEnquiriesScreen
+            enquiries={enquiries}
+            onRefresh={fetchManagerData}
           />
         );
       case 'profile':
@@ -125,14 +185,28 @@ export const InventoryManagerDashboardScreen: React.FC<InventoryManagerDashboard
             <View style={styles.shortcutRow}>
               <TouchableOpacity style={styles.shortcutBtn} onPress={() => setCurrentRoute('vehicles')}>
                 <Text style={styles.shortcutIcon}>🏍️</Text>
-                <Text style={styles.shortcutTitle}>Vehicle Stock Catalog</Text>
-                <Text style={styles.shortcutSub}>Bikes & Cars Stock</Text>
+                <Text style={styles.shortcutTitle}>Vehicle Stock</Text>
+                <Text style={styles.shortcutSub}>Bikes & Cars</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={[styles.shortcutBtn, styles.activePartsShortcut]} onPress={() => setCurrentRoute('spare_parts')}>
                 <Text style={styles.shortcutIcon}>📦</Text>
-                <Text style={styles.shortcutTitle}>Spare Parts Stock</Text>
-                <Text style={styles.shortcutSub}>OEM Parts Control</Text>
+                <Text style={styles.shortcutTitle}>Spare Parts</Text>
+                <Text style={styles.shortcutSub}>OEM Inventory</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.shortcutRow, { marginTop: 10 }]}>
+              <TouchableOpacity style={styles.shortcutBtn} onPress={() => setCurrentRoute('service_jobs')}>
+                <Text style={styles.shortcutIcon}>🔧</Text>
+                <Text style={styles.shortcutTitle}>Service Jobs</Text>
+                <Text style={styles.shortcutSub}>Re-assign Workers</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.shortcutBtn} onPress={() => setCurrentRoute('enquiries')}>
+                <Text style={styles.shortcutIcon}>💬</Text>
+                <Text style={styles.shortcutTitle}>Inquiries Tracker</Text>
+                <Text style={styles.shortcutSub}>Test Ride Requests</Text>
               </TouchableOpacity>
             </View>
 
@@ -291,6 +365,63 @@ export const InventoryManagerDashboardScreen: React.FC<InventoryManagerDashboard
         showroomCode={showroomCode}
         onLogout={logout}
       />
+
+      {/* Assign Worker / Technician Re-assignment Modal */}
+      <Modal
+        visible={selectedJob !== null}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setSelectedJob(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Assign Service Technician</Text>
+            <Text style={styles.modalSubtitle}>
+              Select a technician for job #{selectedJob?.id.slice(0, 8)} ({selectedJob?.customer_name})
+            </Text>
+
+            {workersList.length === 0 ? (
+              <View style={{ padding: 16, alignItems: 'center' }}>
+                <Text style={{ color: '#ef4444', fontSize: 13, marginBottom: 12, textAlign: 'center' }}>
+                  No active Technicians / Workers provisioned for this showroom yet.
+                </Text>
+                <Button
+                  title="Close"
+                  onPress={() => setSelectedJob(null)}
+                  variant="secondary"
+                />
+              </View>
+            ) : (
+              workersList.map((worker) => (
+                <TouchableOpacity
+                  key={worker.id}
+                  style={styles.workerSelectCard}
+                  onPress={() => handleAssignTechnician(worker.id, worker.full_name)}
+                  disabled={isAssigning}
+                  activeOpacity={0.7}
+                >
+                  <View>
+                    <Text style={styles.workerNameText}>
+                      {worker.full_name}
+                    </Text>
+                    <Text style={styles.workerPhoneText}>
+                      📞 {worker.phone}
+                    </Text>
+                  </View>
+                  <Ionicons name="arrow-forward-circle" size={24} color="#06b6d4" />
+                </TouchableOpacity>
+              ))
+            )}
+
+            <Button
+              title="Cancel"
+              onPress={() => setSelectedJob(null)}
+              variant="secondary"
+              style={{ marginTop: 10 }}
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeScreen>
   );
 };
@@ -600,5 +731,55 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 11,
     fontWeight: '800',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(3, 7, 18, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#0f172a',
+    borderRadius: 20,
+    padding: 20,
+    width: '100%',
+    maxWidth: 420,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  modalTitle: {
+    color: '#f8fafc',
+    fontSize: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  modalSubtitle: {
+    color: '#94a3b8',
+    fontSize: 12,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  workerSelectCard: {
+    backgroundColor: '#1e293b',
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#334155',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  workerNameText: {
+    color: '#f8fafc',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  workerPhoneText: {
+    color: '#94a3b8',
+    fontSize: 12,
+    marginTop: 2,
   },
 });

@@ -18,6 +18,8 @@ export interface ServiceJobItem {
   worker_approval: WorkerApproval;
   status: ServiceJobStatus;
   status_notes?: string | null;
+  preferred_date?: string | null;
+  time_slot?: string | null;
   status_updated_at?: string;
   created_at: string;
 }
@@ -62,3 +64,25 @@ export async function updateServiceJob(
   const response = await apiClient.put(`/services/${id}`, input);
   return response.data.data.service_job;
 }
+
+export interface CustomerServiceRequestInput {
+  target_showroom_id: string;
+  vehicle_type?: 'BIKE' | 'CAR';
+  vehicle_details: string;
+  service_description: string;
+  preferred_date?: string;
+  time_slot?: string;
+}
+
+export async function createCustomerServiceRequest(
+  input: CustomerServiceRequestInput
+): Promise<ServiceJobItem> {
+  const response = await apiClient.post('/customer/service-requests', input);
+  return response.data.data.service_request;
+}
+
+export async function getCustomerServiceRequests(): Promise<ServiceJobItem[]> {
+  const response = await apiClient.get('/customer/service-requests');
+  return response.data.data.service_requests || [];
+}
+
