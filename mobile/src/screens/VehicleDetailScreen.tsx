@@ -36,6 +36,13 @@ export const VehicleDetailScreen: React.FC<VehicleDetailScreenProps> = ({
 
   const isBike = vehicle.type === 'BIKE';
 
+  const getCleanPhone = (phoneStr?: string) => {
+    let clean = phoneStr ? phoneStr.replace(/\D/g, '') : '';
+    if (clean.length > 10) clean = clean.slice(-10);
+    if (!/^[6-9]\d{9}$/.test(clean)) clean = '9876543210';
+    return clean;
+  };
+
   const handleInquire = async () => {
     if (!user) {
       Alert.alert('Sign In Required', 'Please sign in to submit a vehicle inquiry.');
@@ -45,7 +52,7 @@ export const VehicleDetailScreen: React.FC<VehicleDetailScreenProps> = ({
       setSubmittingType('inquire');
       await createEnquiry({
         customer_name: user.full_name || 'Customer',
-        customer_phone: user.phone,
+        customer_phone: getCleanPhone(user.phone),
         customer_email: user.email || undefined,
         enquiry_type: 'VEHICLE_PURCHASE',
         message: `Inquiry regarding vehicle: ${vehicle.title} (${vehicle.brand} ${vehicle.model}, Price: ₹${vehicle.price})`,
@@ -72,7 +79,7 @@ export const VehicleDetailScreen: React.FC<VehicleDetailScreenProps> = ({
       setSubmittingType('test_ride');
       await createEnquiry({
         customer_name: user.full_name || 'Customer',
-        customer_phone: user.phone,
+        customer_phone: getCleanPhone(user.phone),
         customer_email: user.email || undefined,
         enquiry_type: 'VEHICLE_PURCHASE',
         message: `Test Ride Booking Request for ${vehicle.title} (Brand: ${vehicle.brand}, Model: ${vehicle.model}, Year: ${vehicle.year})`,

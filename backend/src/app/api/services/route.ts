@@ -27,7 +27,14 @@ export async function POST(req: NextRequest) {
     }
 
     const data = validation.data;
-    const targetShowroomId = user.showroomId || data.target_showroom_id;
+    let targetShowroomId = user.showroomId || data.target_showroom_id;
+
+    if (!targetShowroomId) {
+      const defaultShowroom = await prisma.showroom.findFirst({
+        where: { status: 'ACTIVE' },
+      });
+      targetShowroomId = defaultShowroom?.id;
+    }
 
     if (!targetShowroomId) {
       return ApiResponse.error('Target showroom ID is required', 400, 'MISSING_SHOWROOM_ID');

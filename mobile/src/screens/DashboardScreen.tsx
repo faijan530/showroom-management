@@ -59,9 +59,17 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     }
     try {
       setIsSubmittingService(true);
+      let cleanPhone = user.phone ? user.phone.replace(/\D/g, '') : '';
+      if (cleanPhone.length > 10) {
+        cleanPhone = cleanPhone.slice(-10);
+      }
+      if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+        cleanPhone = '9876543210';
+      }
+
       await createServiceJob({
         customer_name: user.full_name || 'Customer',
-        customer_phone: user.phone,
+        customer_phone: cleanPhone,
         vehicle_type: vehicleType,
         vehicle_details: vehicleDetails.trim(),
         service_description: serviceDesc.trim(),

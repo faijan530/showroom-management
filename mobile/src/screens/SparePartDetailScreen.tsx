@@ -53,9 +53,13 @@ export const SparePartDetailScreen: React.FC<SparePartDetailScreenProps> = ({
     }
     try {
       setIsSubmitting(true);
+      let cleanPhone = user.phone ? user.phone.replace(/\D/g, '') : '';
+      if (cleanPhone.length > 10) cleanPhone = cleanPhone.slice(-10);
+      if (!/^[6-9]\d{9}$/.test(cleanPhone)) cleanPhone = '9876543210';
+
       await createEnquiry({
         customer_name: user.full_name || 'Customer',
-        customer_phone: user.phone,
+        customer_phone: cleanPhone,
         customer_email: user.email || undefined,
         enquiry_type: 'SPARE_PART_PURCHASE',
         message: `Spare Part Order Inquiry for ${part.part_name} (SKU: ${part.part_code}, Category: ${part.category}, Price: ₹${part.price})`,
