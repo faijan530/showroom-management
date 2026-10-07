@@ -1,17 +1,37 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeScreen } from '../components/ui/SafeScreen';
 import { Button } from '../components/ui/Button';
 import { useAuthStore } from '../store/auth.store';
+import { getCustomerEnquiries, EnquiryItem } from '../lib/enquiries-api';
 
 interface DashboardScreenProps {
   onNavigateToVehicles?: () => void;
+  onNavigateToSpareParts?: () => void;
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onNavigateToVehicles,
+  onNavigateToSpareParts,
 }) => {
   const { user, logout } = useAuthStore();
+  const [enquiries, setEnquiries] = useState<EnquiryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchEnquiries = async () => {
+    try {
+      const data = await getCustomerEnquiries();
+      setEnquiries(data);
+    } catch {
+      setEnquiries([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEnquiries();
+  }, []);
 
   const getRoleBadgeColor = (role?: string) => {
     switch (role) {
@@ -25,6 +45,17 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         return '#06b6d4';
       default:
         return '#10b981';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'RESPONDED':
+        return '#10b981';
+      case 'CLOSED':
+        return '#64748b';
+      default:
+        return '#f59e0b';
     }
   };
 
@@ -64,7 +95,46 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           ) : null}
         </View>
 
-        {/* Quick Services Navigation Banner */}
+        {/* Customer Inquiries & Test Ride Tracker Card */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>My Inquiries & Test Ride Status</Text>
+          <Text style={styles.cardDesc}>
+            Track responses from dealerships regarding your vehicle inquiries and test ride requests.
+          </Text>
+
+          {loading ? (
+            <ActivityIndicator size="small" color="#3b82f6" style={{ marginVertical: 10 }} />
+          ) : enquiries.length === 0 ? (
+            <View style={styles.emptyEnquiryBox}>
+              <Text style={styles.emptyEnquiryText}>No active inquiries or test ride requests found.</Text>
+            </View>
+          ) : (
+            enquiries.map((item) => (
+              <View key={item.id} style={styles.enquiryCardItem}>
+                <View style={styles.enquiryHeaderRow}>
+                  <Text style={styles.enquiryTypeTag}>
+                    {item.enquiry_type.replace('_', ' ')}
+                  </Text>
+                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+                    <Text style={styles.statusBadgeText}>{item.status}</Text>
+                  </View>
+                </View>
+                <Text style={styles.enquiryMsg}>{item.message}</Text>
+                {item.target_showroom_name ? (
+                  <Text style={styles.enquiryShowroom}>Dealership: {item.target_showroom_name}</Text>
+                ) : null}
+                {item.response_notes ? (
+                  <View style={styles.responseNoteBox}>
+                    <Text style={styles.responseNoteTitle}>Dealer Response:</Text>
+                    <Text style={styles.responseNoteBody}>{item.response_notes}</Text>
+                  </View>
+                ) : null}
+              </View>
+            ))
+          )}
+        </View>
+
+        {/* Module 2: Vehicle Marketplace */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Vehicle Marketplace (Module 2)</Text>
           <Text style={styles.cardDesc}>
@@ -74,6 +144,21 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           <Button
             title="🏍️ Browse Vehicle Marketplace"
             onPress={onNavigateToVehicles || (() => {})}
+            style={styles.marketplaceBtn}
+          />
+        </View>
+
+        {/* Module 3: Spare Parts Catalog */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>OEM Spare Parts Catalog (Module 3)</Text>
+          <Text style={styles.cardDesc}>
+            Browse genuine replacement components, check stock status, and submit availability inquiries.
+          </Text>
+
+          <Button
+            title="⚙️ Browse Spare Parts Catalog"
+            onPress={onNavigateToSpareParts || (() => {})}
+            variant="secondary"
             style={styles.marketplaceBtn}
           />
         </View>
@@ -162,5 +247,70 @@ const styles = StyleSheet.create({
   },
   logoutBtn: {
     marginTop: 10,
+  },
+  emptyEnquiryBox: {
+    padding: 12,
+    backgroundColor: '#090d16',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  emptyEnquiryText: {
+    color: '#64748b',
+    fontSize: 12,
+  },
+  enquiryCardItem: {
+    backgroundColor: '#090d16',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  enquiryHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  enquiryTypeTag: {
+    color: '#38bdf8',
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  statusBadgeText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  enquiryMsg: {
+    color: '#e2e8f0',
+    fontSize: 13,
+    marginBottom: 4,
+  },
+  enquiryShowroom: {
+    color: '#94a3b8',
+    fontSize: 11,
+  },
+  responseNoteBox: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: '#1e293b',
+    borderRadius: 6,
+  },
+  responseNoteTitle: {
+    color: '#10b981',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  responseNoteBody: {
+    color: '#f1f5f9',
+    fontSize: 12,
+    marginTop: 2,
   },
 });

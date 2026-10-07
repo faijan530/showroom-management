@@ -1,8 +1,22 @@
 import axios from 'axios';
+import { Platform } from 'react-native';
 import { secureStorage } from './secure-store';
 
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL || 'https://motohub-ghka.onrender.com/api';
+
+const getApiBaseUrl = () => {
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+  if (Platform.OS === 'android') {
+    return 'http://10.0.2.2:3000/api';
+  }
+  if (Platform.OS === 'web' || Platform.OS === 'ios') {
+    return 'http://localhost:3000/api';
+  }
+  return 'http://192.168.0.106:3000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

@@ -1,14 +1,36 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeScreen } from '../components/ui/SafeScreen';
 import { Button } from '../components/ui/Button';
 import { useAuthStore } from '../store/auth.store';
+import { getServiceJobs, ServiceJobItem } from '../lib/services-api';
 
 export const WorkerDashboardScreen: React.FC = () => {
   const { user, logout } = useAuthStore();
+  const [jobs, setJobs] = useState<ServiceJobItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchJobs = async () => {
+    try {
+      const data = await getServiceJobs();
+      setJobs(data);
+    } catch {
+      setJobs([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchJobs();
+  }, []);
 
   const showroomTitle = user?.showroom_name || user?.showroom?.name || 'Dealership Service Bay';
   const showroomCode = user?.showroom_code || user?.showroom?.code || 'SHW-01';
+
+  const assignedCount = jobs.filter((j) => j.status === 'ASSIGNED' || j.status === 'REQUESTED').length;
+  const inProgressCount = jobs.filter((j) => j.status === 'IN_PROGRESS').length;
+  const completedCount = jobs.filter((j) => j.status === 'COMPLETED').length;
 
   return (
     <SafeScreen>
@@ -32,29 +54,47 @@ export const WorkerDashboardScreen: React.FC = () => {
         {/* Task Summary Grid */}
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>0</Text>
+            <Text style={styles.statNumber}>{assignedCount}</Text>
             <Text style={styles.statLabel}>Assigned Jobs</Text>
           </View>
 
           <View style={styles.statCard}>
-            <Text style={[styles.statNumber, styles.inProgressText]}>0</Text>
+            <Text style={[styles.statNumber, styles.inProgressText]}>{inProgressCount}</Text>
             <Text style={styles.statLabel}>In Progress</Text>
           </View>
 
           <View style={styles.statCard}>
-            <Text style={[styles.statNumber, styles.completedText]}>0</Text>
-            <Text style={styles.statLabel}>Completed Today</Text>
+            <Text style={[styles.statNumber, styles.completedText]}>{completedCount}</Text>
+            <Text style={styles.statLabel}>Completed</Text>
           </View>
         </View>
 
-        {/* Empty Task Queue Card */}
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyIcon}>🔧</Text>
-          <Text style={styles.emptyTitle}>Task Queue Clear</Text>
-          <Text style={styles.emptyDesc}>
-            No service jobs assigned to your queue at this moment. When showroom managers allocate a repair task, it will appear here instantly.
-          </Text>
-        </View>
+        {/* Task Queue List / Empty State */}
+        {loading ? (
+          <ActivityIndicator size="large" color="#f59e0b" style={{ marginVertical: 20 }} />
+        ) : jobs.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyIcon}>🔧</Text>
+            <Text style={styles.emptyTitle}>Task Queue Clear</Text>
+            <Text style={styles.emptyDesc}>
+              No service jobs assigned to your queue at this moment. When showroom managers allocate a repair task, it will appear here instantly.
+            </Text>
+          </View>
+        ) : (
+          jobs.map((job) => (
+            <View key={job.id} style={styles.jobItemCard}>
+              <View style={styles.jobHeaderRow}>
+                <Text style={styles.jobCustomer}>{job.customer_name}</Text>
+                <View style={styles.jobStatusTag}>
+                  <Text style={styles.jobStatusText}>{job.status}</Text>
+                </View>
+              </View>
+              <Text style={styles.jobVehicle}>{job.vehicle_details} ({job.vehicle_type})</Text>
+              <Text style={styles.jobDesc}>{job.service_description}</Text>
+              <Text style={styles.jobPhone}>📞 Contact: {job.customer_phone}</Text>
+            </View>
+          ))
+        )}
 
         <Button
           title="Sign Out"
@@ -176,5 +216,51 @@ const styles = StyleSheet.create({
   },
   logoutBtn: {
     marginTop: 10,
+  },
+  jobItemCard: {
+    backgroundColor: '#0f172a',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  jobHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  jobCustomer: {
+    color: '#f8fafc',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  jobStatusTag: {
+    backgroundColor: '#f59e0b',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  jobStatusText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  jobVehicle: {
+    color: '#38bdf8',
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  jobDesc: {
+    color: '#cbd5e1',
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  jobPhone: {
+    color: '#94a3b8',
+    fontSize: 12,
   },
 });

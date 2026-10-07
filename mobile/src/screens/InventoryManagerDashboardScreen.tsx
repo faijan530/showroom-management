@@ -1,20 +1,55 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { SafeScreen } from '../components/ui/SafeScreen';
 import { Button } from '../components/ui/Button';
 import { useAuthStore } from '../store/auth.store';
+import { getSpareParts } from '../lib/spare-parts-api';
+import { SparePart } from '../types/spare-part';
 
 interface InventoryManagerDashboardScreenProps {
   onNavigateToVehicles?: () => void;
+  onNavigateToSpareParts?: () => void;
 }
 
 export const InventoryManagerDashboardScreen: React.FC<InventoryManagerDashboardScreenProps> = ({
   onNavigateToVehicles,
+  onNavigateToSpareParts,
 }) => {
   const { user, logout } = useAuthStore();
 
+  const [parts, setParts] = useState<SparePart[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchStockSummary = async () => {
+    try {
+      const data = await getSpareParts({ showroom_id: user?.showroom_id || undefined });
+      setParts(data);
+    } catch {
+      setParts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStockSummary();
+  }, []);
+
   const showroomTitle = user?.showroom_name || user?.showroom?.name || 'Dealership Inventory';
   const showroomCode = user?.showroom_code || user?.showroom?.code || 'SHW-01';
+
+  // Real-time Stock Badge Counts
+  const totalParts = parts.length;
+  const inStockCount = parts.filter((p) => p.stock_quantity > p.min_stock_alert).length;
+  const lowStockCount = parts.filter((p) => p.stock_quantity > 0 && p.stock_quantity <= p.min_stock_alert).length;
+  const outOfStockCount = parts.filter((p) => p.stock_quantity === 0).length;
 
   return (
     <SafeScreen>
@@ -43,27 +78,66 @@ export const InventoryManagerDashboardScreen: React.FC<InventoryManagerDashboard
             <Text style={styles.shortcutSub}>Bikes & Cars Stock</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.shortcutBtn} onPress={() => {}}>
+          <TouchableOpacity style={[styles.shortcutBtn, styles.activePartsShortcut]} onPress={onNavigateToSpareParts}>
             <Text style={styles.shortcutIcon}>📦</Text>
             <Text style={styles.shortcutTitle}>Spare Parts Stock</Text>
             <Text style={styles.shortcutSub}>OEM Parts Control</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Stock Alerts Overview */}
+        {/* Live Stock Level Indicators */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Real-Time Stock Health</Text>
+        </View>
+
+        {loading ? (
+          <ActivityIndicator size="large" color="#06b6d4" style={styles.loader} />
+        ) : (
+          <View style={styles.stockStatusContainer}>
+            {/* IN_STOCK Card */}
+            <TouchableOpacity style={[styles.stockCard, styles.inStockBorder]} onPress={onNavigateToSpareParts}>
+              <View style={styles.stockCardHeader}>
+                <Text style={styles.stockIcon}>🟢</Text>
+                <Text style={styles.stockBadgeTitle}>IN_STOCK</Text>
+              </View>
+              <Text style={[styles.stockCount, styles.inStockCountText]}>{inStockCount}</Text>
+              <Text style={styles.stockCardSub}>Healthy Stock Levels</Text>
+            </TouchableOpacity>
+
+            {/* LOW_STOCK Card */}
+            <TouchableOpacity style={[styles.stockCard, styles.lowStockBorder]} onPress={onNavigateToSpareParts}>
+              <View style={styles.stockCardHeader}>
+                <Text style={styles.stockIcon}>🟡</Text>
+                <Text style={styles.stockBadgeTitle}>LOW_STOCK</Text>
+              </View>
+              <Text style={[styles.stockCount, styles.lowStockCountText]}>{lowStockCount}</Text>
+              <Text style={styles.stockCardSub}>Requires Reorder</Text>
+            </TouchableOpacity>
+
+            {/* OUT_OF_STOCK Card */}
+            <TouchableOpacity style={[styles.stockCard, styles.outOfStockBorder]} onPress={onNavigateToSpareParts}>
+              <View style={styles.stockCardHeader}>
+                <Text style={styles.stockIcon}>🔴</Text>
+                <Text style={styles.stockBadgeTitle}>OUT_OF_STOCK</Text>
+              </View>
+              <Text style={[styles.stockCount, styles.outOfStockCountText]}>{outOfStockCount}</Text>
+              <Text style={styles.stockCardSub}>Depleted Items</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Alert Overview Banner */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Inventory Health & Alerts</Text>
+          <Text style={styles.cardTitle}>Inventory Operations Summary</Text>
           <Text style={styles.cardDesc}>
-            Real-time stock level monitoring for vehicle units and spare parts.
+            {totalParts} total OEM spare parts registered under {showroomTitle}.
           </Text>
 
-          <View style={styles.alertRow}>
-            <Text style={styles.alertIcon}>✅</Text>
-            <View style={styles.alertCol}>
-              <Text style={styles.alertTitle}>Vehicle Catalog Synced</Text>
-              <Text style={styles.alertSub}>All stock changes reflect immediately on public marketplace.</Text>
-            </View>
-          </View>
+          <Button
+            title="⚙️ Manage Spare Parts & Adjust Stock"
+            onPress={onNavigateToSpareParts || (() => {})}
+            style={styles.manageBtn}
+          />
         </View>
 
         <Button
@@ -123,14 +197,14 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   showroomCode: {
-    color: '#94a3b8',
+    color: '#cbd5e1',
     fontSize: 12,
     marginTop: 2,
   },
   shortcutRow: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   shortcutBtn: {
     flex: 1,
@@ -140,6 +214,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#1e293b',
     alignItems: 'center',
+  },
+  activePartsShortcut: {
+    borderColor: '#06b6d4',
   },
   shortcutIcon: {
     fontSize: 28,
@@ -152,9 +229,78 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   shortcutSub: {
-    color: '#64748b',
+    color: '#38bdf8',
     fontSize: 11,
+    fontWeight: '600',
     marginTop: 2,
+  },
+  sectionHeader: {
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#f8fafc',
+  },
+  loader: {
+    marginVertical: 20,
+  },
+  stockStatusContainer: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 20,
+  },
+  stockCard: {
+    flex: 1,
+    backgroundColor: '#0f172a',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+    alignItems: 'center',
+  },
+  inStockBorder: {
+    borderColor: 'rgba(16, 185, 129, 0.4)',
+  },
+  lowStockBorder: {
+    borderColor: 'rgba(245, 158, 11, 0.4)',
+  },
+  outOfStockBorder: {
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+  },
+  stockCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 4,
+  },
+  stockIcon: {
+    fontSize: 12,
+  },
+  stockBadgeTitle: {
+    color: '#cbd5e1',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  stockCount: {
+    fontSize: 24,
+    fontWeight: '800',
+    marginVertical: 2,
+  },
+  inStockCountText: {
+    color: '#10b981',
+  },
+  lowStockCountText: {
+    color: '#f59e0b',
+  },
+  outOfStockCountText: {
+    color: '#ef4444',
+  },
+  stockCardSub: {
+    color: '#64748b',
+    fontSize: 9,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   card: {
     backgroundColor: '#0f172a',
@@ -175,29 +321,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: 14,
   },
-  alertRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#1e293b',
-    padding: 12,
-    borderRadius: 10,
-  },
-  alertIcon: {
-    fontSize: 20,
-  },
-  alertCol: {
-    flex: 1,
-  },
-  alertTitle: {
-    color: '#f8fafc',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  alertSub: {
-    color: '#94a3b8',
-    fontSize: 11,
-    marginTop: 2,
+  manageBtn: {
+    marginTop: 4,
   },
   logoutBtn: {
     marginTop: 10,

@@ -30,6 +30,16 @@ export async function POST(req: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { phone },
+      include: {
+        showroom: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -62,6 +72,9 @@ export async function POST(req: NextRequest) {
         email: user.email,
         role: user.role,
         showroom_id: user.showroomId,
+        showroom_name: user.showroom?.name || null,
+        showroom_code: user.showroom?.code || null,
+        showroom: user.showroom || null,
       },
     });
 

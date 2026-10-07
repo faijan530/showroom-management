@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
 import { SafeScreen } from '../components/ui/SafeScreen';
 import { Button } from '../components/ui/Button';
 import { Vehicle } from '../types/vehicle';
+import { useAuthStore } from '../store/auth.store';
+import { createEnquiry } from '../lib/enquiries-api';
 
 interface VehicleDetailScreenProps {
   vehicle: Vehicle;
@@ -21,6 +23,9 @@ export const VehicleDetailScreen: React.FC<VehicleDetailScreenProps> = ({
   vehicle,
   onBack,
 }) => {
+  const { user } = useAuthStore();
+  const [submittingType, setSubmittingType] = useState<'inquire' | 'test_ride' | null>(null);
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -31,18 +36,58 @@ export const VehicleDetailScreen: React.FC<VehicleDetailScreenProps> = ({
 
   const isBike = vehicle.type === 'BIKE';
 
-  const handleInquire = () => {
-    Alert.alert(
-      'Inquiry Submitted',
-      `Your inquiry for ${vehicle.title} has been sent to ${vehicle.showroom_name || 'the showroom'}. A representative will contact you shortly!`
-    );
+  const handleInquire = async () => {
+    if (!user) {
+      Alert.alert('Sign In Required', 'Please sign in to submit a vehicle inquiry.');
+      return;
+    }
+    try {
+      setSubmittingType('inquire');
+      await createEnquiry({
+        customer_name: user.full_name || 'Customer',
+        customer_phone: user.phone,
+        customer_email: user.email || undefined,
+        enquiry_type: 'VEHICLE_PURCHASE',
+        message: `Inquiry regarding vehicle: ${vehicle.title} (${vehicle.brand} ${vehicle.model}, Price: ₹${vehicle.price})`,
+        target_showroom_id: vehicle.showroom_id,
+      });
+
+      Alert.alert(
+        'Inquiry Submitted Successfully',
+        `Your inquiry for ${vehicle.title} has been recorded. Dealership representatives from ${vehicle.showroom_name || 'the showroom'} will contact you shortly!`
+      );
+    } catch (err: any) {
+      Alert.alert('Inquiry Failed', err.message || 'Failed to submit inquiry. Please try again.');
+    } finally {
+      setSubmittingType(null);
+    }
   };
 
-  const handleBookTestDrive = () => {
-    Alert.alert(
-      'Test Drive Request',
-      `Booking request for ${vehicle.title} test ride submitted successfully.`
-    );
+  const handleBookTestDrive = async () => {
+    if (!user) {
+      Alert.alert('Sign In Required', 'Please sign in to book a test ride.');
+      return;
+    }
+    try {
+      setSubmittingType('test_ride');
+      await createEnquiry({
+        customer_name: user.full_name || 'Customer',
+        customer_phone: user.phone,
+        customer_email: user.email || undefined,
+        enquiry_type: 'VEHICLE_PURCHASE',
+        message: `Test Ride Booking Request for ${vehicle.title} (Brand: ${vehicle.brand}, Model: ${vehicle.model}, Year: ${vehicle.year})`,
+        target_showroom_id: vehicle.showroom_id,
+      });
+
+      Alert.alert(
+        'Test Ride Booked',
+        `Your test ride request for ${vehicle.title} has been logged in the system. The showroom will confirm your schedule time!`
+      );
+    } catch (err: any) {
+      Alert.alert('Booking Failed', err.message || 'Failed to book test ride. Please try again.');
+    } finally {
+      setSubmittingType(null);
+    }
   };
 
   return (

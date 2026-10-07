@@ -11,6 +11,10 @@ export function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_APP_URL,
     'http://localhost:3000',
     'http://localhost:3001',
+    'http://localhost:8081',
+    'http://localhost:19006',
+    'http://192.168.0.106:8081',
+    'http://192.168.0.106:3000',
   ].filter(Boolean) as string[];
 
   const isAllowed = allowedOrigins.some((allowed) => allowed && (origin === allowed || origin.startsWith(allowed))) || !origin;

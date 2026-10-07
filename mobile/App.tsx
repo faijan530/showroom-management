@@ -11,7 +11,10 @@ import { WorkerDashboardScreen } from './src/screens/WorkerDashboardScreen';
 import { InventoryManagerDashboardScreen } from './src/screens/InventoryManagerDashboardScreen';
 import { VehiclesScreen } from './src/screens/VehiclesScreen';
 import { VehicleDetailScreen } from './src/screens/VehicleDetailScreen';
+import { SparePartsScreen } from './src/screens/SparePartsScreen';
+import { SparePartDetailScreen } from './src/screens/SparePartDetailScreen';
 import { Vehicle } from './src/types/vehicle';
+import { SparePart } from './src/types/spare-part';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,12 +26,18 @@ const queryClient = new QueryClient({
 });
 
 type AuthScreen = 'login' | 'register';
-type AppScreen = 'dashboard' | 'vehicles' | 'vehicle_detail';
+type AppScreen =
+  | 'dashboard'
+  | 'vehicles'
+  | 'vehicle_detail'
+  | 'spare_parts'
+  | 'spare_part_detail';
 
 function AppContent() {
   const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
   const [appScreen, setAppScreen] = useState<AppScreen>('dashboard');
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [selectedPart, setSelectedPart] = useState<SparePart | null>(null);
 
   const { user, isAuthenticated, isLoading, checkAuthSession } = useAuthStore();
 
@@ -51,68 +60,7 @@ function AppContent() {
       return <SuperAdminDashboardScreen />;
     }
 
-    // 2. ADMIN Role Portal (Showroom Owner / Manager)
-    if (user?.role === 'ADMIN') {
-      if (appScreen === 'vehicles') {
-        return (
-          <VehiclesScreen
-            onSelectVehicle={(vehicle) => {
-              setSelectedVehicle(vehicle);
-              setAppScreen('vehicle_detail');
-            }}
-            onBack={() => setAppScreen('dashboard')}
-          />
-        );
-      }
-      if (appScreen === 'vehicle_detail' && selectedVehicle) {
-        return (
-          <VehicleDetailScreen
-            vehicle={selectedVehicle}
-            onBack={() => setAppScreen('vehicles')}
-          />
-        );
-      }
-      return (
-        <AdminDashboardScreen
-          onNavigateToVehicles={() => setAppScreen('vehicles')}
-        />
-      );
-    }
-
-    // 3. WORKER Role Portal (Technician / Mechanic)
-    if (user?.role === 'WORKER') {
-      return <WorkerDashboardScreen />;
-    }
-
-    // 4. INVENTORY_MANAGER Role Portal
-    if (user?.role === 'INVENTORY_MANAGER') {
-      if (appScreen === 'vehicles') {
-        return (
-          <VehiclesScreen
-            onSelectVehicle={(vehicle) => {
-              setSelectedVehicle(vehicle);
-              setAppScreen('vehicle_detail');
-            }}
-            onBack={() => setAppScreen('dashboard')}
-          />
-        );
-      }
-      if (appScreen === 'vehicle_detail' && selectedVehicle) {
-        return (
-          <VehicleDetailScreen
-            vehicle={selectedVehicle}
-            onBack={() => setAppScreen('vehicles')}
-          />
-        );
-      }
-      return (
-        <InventoryManagerDashboardScreen
-          onNavigateToVehicles={() => setAppScreen('vehicles')}
-        />
-      );
-    }
-
-    // 5. USER / CUSTOMER Role Portal (Public User)
+    // Common screen renders (Vehicles & Spare Parts)
     if (appScreen === 'vehicles') {
       return (
         <VehiclesScreen
@@ -134,9 +82,57 @@ function AppContent() {
       );
     }
 
+    if (appScreen === 'spare_parts') {
+      return (
+        <SparePartsScreen
+          onSelectPart={(part) => {
+            setSelectedPart(part);
+            setAppScreen('spare_part_detail');
+          }}
+          onBack={() => setAppScreen('dashboard')}
+        />
+      );
+    }
+
+    if (appScreen === 'spare_part_detail' && selectedPart) {
+      return (
+        <SparePartDetailScreen
+          part={selectedPart}
+          onBack={() => setAppScreen('spare_parts')}
+        />
+      );
+    }
+
+    // 2. ADMIN Role Portal (Showroom Owner / Manager)
+    if (user?.role === 'ADMIN') {
+      return (
+        <AdminDashboardScreen
+          onNavigateToVehicles={() => setAppScreen('vehicles')}
+          onNavigateToSpareParts={() => setAppScreen('spare_parts')}
+        />
+      );
+    }
+
+    // 3. WORKER Role Portal (Technician / Mechanic)
+    if (user?.role === 'WORKER') {
+      return <WorkerDashboardScreen />;
+    }
+
+    // 4. INVENTORY_MANAGER Role Portal
+    if (user?.role === 'INVENTORY_MANAGER') {
+      return (
+        <InventoryManagerDashboardScreen
+          onNavigateToVehicles={() => setAppScreen('vehicles')}
+          onNavigateToSpareParts={() => setAppScreen('spare_parts')}
+        />
+      );
+    }
+
+    // 5. USER / CUSTOMER Role Portal (Public User)
     return (
       <DashboardScreen
         onNavigateToVehicles={() => setAppScreen('vehicles')}
+        onNavigateToSpareParts={() => setAppScreen('spare_parts')}
       />
     );
   }

@@ -17,10 +17,12 @@ import { getStaffMembers, createStaffMember, StaffMember } from '../lib/staff-ap
 
 interface AdminDashboardScreenProps {
   onNavigateToVehicles?: () => void;
+  onNavigateToSpareParts?: () => void;
 }
 
 export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
   onNavigateToVehicles,
+  onNavigateToSpareParts,
 }) => {
   const { user, logout } = useAuthStore();
 
@@ -133,7 +135,15 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
             onPress={onNavigateToVehicles}
           >
             <Text style={styles.shortcutIcon}>🏍️</Text>
-            <Text style={styles.shortcutTitle}>Showroom Inventory</Text>
+            <Text style={styles.shortcutTitle}>Vehicles Stock</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.shortcutBtn}
+            onPress={onNavigateToSpareParts}
+          >
+            <Text style={styles.shortcutIcon}>⚙️</Text>
+            <Text style={styles.shortcutTitle}>Spare Parts Stock</Text>
           </TouchableOpacity>
 
           <TouchableOpacity

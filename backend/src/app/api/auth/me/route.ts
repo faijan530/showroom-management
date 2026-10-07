@@ -18,6 +18,14 @@ export async function GET(req: NextRequest) {
         role: true,
         showroomId: true,
         createdAt: true,
+        showroom: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            address: true,
+          },
+        },
       },
     });
 
@@ -33,6 +41,9 @@ export async function GET(req: NextRequest) {
         email: user.email,
         role: user.role,
         showroom_id: user.showroomId,
+        showroom_name: user.showroom?.name || null,
+        showroom_code: user.showroom?.code || null,
+        showroom: user.showroom || null,
         created_at: user.createdAt,
       },
     });
