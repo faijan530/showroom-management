@@ -165,7 +165,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
       <ScrollView contentContainerStyle={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.badge}>SHOWROOM ADMIN PANEL</Text>
+          <Text style={styles.badge}>⚙️ SHOWROOM ADMIN CONTROL</Text>
           <Text style={styles.title}>Dealership Dashboard</Text>
           <Text style={styles.subtitle}>
             Manage staff credentials, inventory, and service operations for {showroomTitle}.
@@ -174,21 +174,26 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
 
         {/* Showroom Profile Card */}
         <View style={styles.showroomCard}>
-          <Text style={styles.cardTitle}>Assigned Showroom Context</Text>
+          <Text style={styles.cardLabel}>ASSIGNED DEALERSHIP SCOPE</Text>
           <Text style={styles.showroomName}>{showroomTitle}</Text>
           <Text style={styles.showroomCode}>Branch Code: {showroomCode}</Text>
         </View>
 
-        {/* Staff Summary Stats */}
+        {/* Staff & Operations Executive Stats */}
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>{workerCount}</Text>
-            <Text style={styles.statLabel}>Technicians / Workers</Text>
+            <Text style={styles.statLabel}>Technicians</Text>
           </View>
 
           <View style={styles.statCard}>
             <Text style={[styles.statNumber, styles.inventoryText]}>{inventoryCount}</Text>
             <Text style={styles.statLabel}>Inventory Managers</Text>
+          </View>
+
+          <View style={[styles.statCard, styles.jobsStatCard]}>
+            <Text style={[styles.statNumber, styles.jobsStatText]}>{serviceJobs.length}</Text>
+            <Text style={styles.statLabel}>Service Jobs</Text>
           </View>
         </View>
 
@@ -199,7 +204,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
             onPress={onNavigateToVehicles}
           >
             <Text style={styles.shortcutIcon}>🏍️</Text>
-            <Text style={styles.shortcutTitle}>Vehicles Stock</Text>
+            <Text style={styles.shortcutTitle}>Vehicles</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -207,7 +212,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
             onPress={onNavigateToSpareParts}
           >
             <Text style={styles.shortcutIcon}>⚙️</Text>
-            <Text style={styles.shortcutTitle}>Spare Parts Stock</Text>
+            <Text style={styles.shortcutTitle}>Spare Parts</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -215,7 +220,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
             onPress={() => setShowModal(true)}
           >
             <Text style={styles.shortcutIcon}>👤</Text>
-            <Text style={styles.shortcutTitle}>Provision Staff</Text>
+            <Text style={styles.shortcutTitle}>Add Staff</Text>
           </TouchableOpacity>
         </View>
 
@@ -542,6 +547,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#8b5cf6',
   },
+  cardLabel: {
+    color: '#94a3b8',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
   cardTitle: {
     color: '#94a3b8',
     fontSize: 11,
@@ -562,16 +574,22 @@ const styles = StyleSheet.create({
   },
   statsGrid: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     marginBottom: 16,
   },
   statCard: {
     flex: 1,
     backgroundColor: '#0f172a',
     borderRadius: 14,
-    padding: 16,
+    padding: 14,
     borderWidth: 1,
     borderColor: '#1e293b',
+  },
+  jobsStatCard: {
+    borderColor: 'rgba(139, 92, 246, 0.4)',
+  },
+  jobsStatText: {
+    color: '#8b5cf6',
   },
   statNumber: {
     fontSize: 24,

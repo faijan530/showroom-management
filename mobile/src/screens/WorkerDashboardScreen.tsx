@@ -51,7 +51,7 @@ export const WorkerDashboardScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.badge}>TECHNICIAN PORTAL</Text>
+          <Text style={styles.badge}>⚡ TECHNICIAN SERVICE BAY</Text>
           <Text style={styles.title}>Service Task Queue</Text>
           <Text style={styles.subtitle}>
             Welcome, {user?.full_name || 'Worker'}! Manage assigned repair and servicing jobs for {showroomTitle}.

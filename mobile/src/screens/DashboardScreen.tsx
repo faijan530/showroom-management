@@ -137,50 +137,75 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     <SafeScreen>
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.appName}>MOTOHUB MOBILE</Text>
-          <Text style={styles.welcomeText}>Hello, {user?.full_name || 'User'}!</Text>
-          <View
-            style={[
-              styles.roleBadge,
-              { backgroundColor: getRoleBadgeColor(user?.role) },
-            ]}
-          >
-            <Text style={styles.roleText}>{user?.role || 'USER'} MEMBER</Text>
+          <Text style={styles.appName}>✨ MOTOHUB CUSTOMER PORTAL</Text>
+          <Text style={styles.welcomeText}>Welcome, {user?.full_name || 'Valued Customer'}!</Text>
+          <View style={styles.headerBadgeRow}>
+            <View style={[styles.roleBadge, { backgroundColor: getRoleBadgeColor(user?.role) }]}>
+              <Text style={styles.roleText}>{user?.role || 'USER'} MEMBER</Text>
+            </View>
+            <Text style={styles.phoneSubText}>📞 {user?.phone}</Text>
           </View>
         </View>
 
-        {/* Account Overview */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Account Overview</Text>
-          <Text style={styles.cardDesc}>
-            Connected securely to MotoHub Platform API.
-          </Text>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Phone Number:</Text>
-            <Text style={styles.infoValue}>{user?.phone}</Text>
+        {/* Quick Stats Grid */}
+        <View style={styles.quickStatsRow}>
+          <View style={styles.quickStatCard}>
+            <Text style={styles.quickStatNumber}>{enquiries.length}</Text>
+            <Text style={styles.quickStatLabel}>Active Inquiries</Text>
           </View>
+          <View style={[styles.quickStatCard, styles.activeStatCard]}>
+            <Text style={[styles.quickStatNumber, styles.activeStatText]}>{serviceJobs.length}</Text>
+            <Text style={styles.quickStatLabel}>Service Bookings</Text>
+          </View>
+        </View>
 
-          {user?.email ? (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Email:</Text>
-              <Text style={styles.infoValue}>{user.email}</Text>
-            </View>
-          ) : null}
+        {/* Action Hub Banner */}
+        <View style={styles.actionHubCard}>
+          <Text style={styles.actionHubTitle}>⚡ Fast Actions</Text>
+          <View style={styles.actionBtnRow}>
+            <TouchableOpacity
+              style={[styles.actionChipBtn, styles.actionChipPrimary]}
+              onPress={() => setShowServiceModal(true)}
+            >
+              <Text style={styles.actionChipIcon}>📅</Text>
+              <Text style={styles.actionChipText}>Book Service</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionChipBtn}
+              onPress={onNavigateToGarage || (() => {})}
+            >
+              <Text style={styles.actionChipIcon}>🏎️</Text>
+              <Text style={styles.actionChipText}>My Garage</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionChipBtn}
+              onPress={onNavigateToVehicles || (() => {})}
+            >
+              <Text style={styles.actionChipIcon}>🏍️</Text>
+              <Text style={styles.actionChipText}>Marketplace</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Customer Inquiries & Test Ride Tracker Card */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>My Inquiries & Test Ride Status</Text>
-          <Text style={styles.cardDesc}>
-            Track responses from dealerships regarding your vehicle inquiries and test ride requests.
-          </Text>
+          <View style={styles.cardHeaderTitleRow}>
+            <Text style={styles.cardIcon}>📩</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitle}>Inquiries & Test Rides</Text>
+              <Text style={styles.cardSub}>Live responses from authorized dealerships</Text>
+            </View>
+          </View>
 
           {loading ? (
-            <ActivityIndicator size="small" color="#3b82f6" style={{ marginVertical: 10 }} />
+            <ActivityIndicator size="small" color="#3b82f6" style={{ marginVertical: 14 }} />
           ) : enquiries.length === 0 ? (
             <View style={styles.emptyEnquiryBox}>
-              <Text style={styles.emptyEnquiryText}>No active inquiries or test ride requests found.</Text>
+              <Text style={styles.emptyEnquiryIcon}>💬</Text>
+              <Text style={styles.emptyEnquiryTitle}>No Active Inquiries</Text>
+              <Text style={styles.emptyEnquiryText}>Inquire about vehicles or spare parts to see live dealer responses here.</Text>
             </View>
           ) : (
             enquiries.map((item) => (
@@ -195,11 +220,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 </View>
                 <Text style={styles.enquiryMsg}>{item.message}</Text>
                 {item.target_showroom_name ? (
-                  <Text style={styles.enquiryShowroom}>Dealership: {item.target_showroom_name}</Text>
+                  <Text style={styles.enquiryShowroom}>📍 Dealership: {item.target_showroom_name}</Text>
                 ) : null}
                 {item.response_notes ? (
                   <View style={styles.responseNoteBox}>
-                    <Text style={styles.responseNoteTitle}>Dealer Response:</Text>
+                    <Text style={styles.responseNoteTitle}>💬 Official Dealer Response:</Text>
                     <Text style={styles.responseNoteBody}>{item.response_notes}</Text>
                   </View>
                 ) : null}
@@ -210,13 +235,16 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
         {/* Customer Service Jobs & Booking Card */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Vehicle Servicing & Repairs</Text>
-          <Text style={styles.cardDesc}>
-            Book a service appointment for your bike or car and track repair status live.
-          </Text>
+          <View style={styles.cardHeaderTitleRow}>
+            <Text style={styles.cardIcon}>🛠️</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitle}>Service & Repair Status</Text>
+              <Text style={styles.cardSub}>Book scheduled servicing or track active repair progress</Text>
+            </View>
+          </View>
 
           <Button
-            title="📅 Book Service Appointment"
+            title="📅 Book Scheduled Service"
             onPress={() => setShowServiceModal(true)}
             style={{ marginBottom: 14 }}
           />
@@ -234,13 +262,15 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 </View>
                 <Text style={styles.enquiryMsg}>{job.service_description}</Text>
                 {job.assigned_worker_name ? (
-                  <Text style={styles.enquiryShowroom}>Technician Assigned: {job.assigned_worker_name}</Text>
+                  <Text style={styles.enquiryShowroom}>👨‍🔧 Technician Assigned: {job.assigned_worker_name}</Text>
                 ) : null}
               </View>
             ))
           ) : (
             <View style={styles.emptyEnquiryBox}>
-              <Text style={styles.emptyEnquiryText}>No active service appointments found.</Text>
+              <Text style={styles.emptyEnquiryIcon}>🔧</Text>
+              <Text style={styles.emptyEnquiryTitle}>No Active Service Appointments</Text>
+              <Text style={styles.emptyEnquiryText}>Book a service request for your vehicle to track maintenance online.</Text>
             </View>
           )}
         </View>
@@ -363,11 +393,11 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   appName: {
     color: '#3b82f6',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1.5,
     marginBottom: 4,
@@ -376,33 +406,127 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: '800',
     color: '#f9fafb',
-    marginBottom: 8,
+    marginBottom: 6,
+  },
+  headerBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   roleBadge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   roleText: {
     color: '#ffffff',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
-  card: {
+  phoneSubText: {
+    color: '#94a3b8',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  quickStatsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  quickStatCard: {
+    flex: 1,
     backgroundColor: '#0f172a',
-    borderRadius: 16,
-    padding: 20,
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  activeStatCard: {
+    borderColor: 'rgba(59, 130, 246, 0.4)',
+  },
+  quickStatNumber: {
+    color: '#f8fafc',
+    fontSize: 26,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  activeStatText: {
+    color: '#3b82f6',
+  },
+  quickStatLabel: {
+    color: '#64748b',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  actionHubCard: {
+    backgroundColor: '#0f172a',
+    borderRadius: 14,
+    padding: 14,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: '#1e293b',
   },
+  actionHubTitle: {
+    color: '#38bdf8',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  actionBtnRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionChipBtn: {
+    flex: 1,
+    backgroundColor: '#1e293b',
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  actionChipPrimary: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
+  },
+  actionChipIcon: {
+    fontSize: 18,
+    marginBottom: 2,
+  },
+  actionChipText: {
+    color: '#f8fafc',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  card: {
+    backgroundColor: '#0f172a',
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  cardHeaderTitleRow: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  cardIcon: {
+    fontSize: 22,
+  },
   cardTitle: {
     color: '#f9fafb',
     fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 6,
+    fontWeight: '800',
+  },
+  cardSub: {
+    color: '#94a3b8',
+    fontSize: 12,
   },
   cardDesc: {
     color: '#9ca3af',
@@ -431,21 +555,35 @@ const styles = StyleSheet.create({
   },
   logoutBtn: {
     marginTop: 10,
+    marginBottom: 30,
   },
   emptyEnquiryBox: {
-    padding: 12,
+    padding: 20,
     backgroundColor: '#090d16',
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  emptyEnquiryIcon: {
+    fontSize: 28,
+    marginBottom: 6,
+  },
+  emptyEnquiryTitle: {
+    color: '#f8fafc',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
   },
   emptyEnquiryText: {
     color: '#64748b',
     fontSize: 12,
+    textAlign: 'center',
   },
   enquiryCardItem: {
     backgroundColor: '#090d16',
-    borderRadius: 10,
-    padding: 12,
+    borderRadius: 12,
+    padding: 14,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: '#1e293b',
@@ -458,9 +596,8 @@ const styles = StyleSheet.create({
   },
   enquiryTypeTag: {
     color: '#38bdf8',
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
+    fontSize: 12,
+    fontWeight: '800',
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -483,14 +620,16 @@ const styles = StyleSheet.create({
   },
   responseNoteBox: {
     marginTop: 8,
-    padding: 8,
+    padding: 10,
     backgroundColor: '#1e293b',
-    borderRadius: 6,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#10b981',
   },
   responseNoteTitle: {
     color: '#10b981',
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   responseNoteBody: {
     color: '#f1f5f9',
@@ -499,7 +638,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
     padding: 20,
   },
@@ -552,3 +691,4 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
 });
+

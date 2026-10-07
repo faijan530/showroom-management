@@ -173,8 +173,8 @@ export const SuperAdminDashboardScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.badge}>SUPERADMIN PANEL</Text>
-          <Text style={styles.title}>Platform Governance</Text>
+          <Text style={styles.badge}>👑 SUPERADMIN GOVERNANCE</Text>
+          <Text style={styles.title}>Platform Control Center</Text>
           <Text style={styles.subtitle}>
             Welcome back, {user?.full_name || 'Superadmin'}. Overview of all registered showrooms.
           </Text>
