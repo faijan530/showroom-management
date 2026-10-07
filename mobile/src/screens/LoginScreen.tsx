@@ -8,6 +8,7 @@ import {
   Platform,
   ScrollView,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeScreen } from '../components/ui/SafeScreen';
 import { Input } from '../components/ui/Input';
@@ -51,6 +52,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }
       >
         <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
+            <Image
+              source={require('../../assets/logo.png')}
+              style={styles.brandLogo}
+              resizeMode="contain"
+            />
             <Text style={styles.badge}>MOTOHUB MOBILE</Text>
             <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>Sign in to access your vehicles, bookings, and showroom services.</Text>
@@ -107,15 +113,21 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
-    marginTop: 20,
+    marginBottom: 28,
+    marginTop: 10,
+  },
+  brandLogo: {
+    width: 90,
+    height: 90,
+    borderRadius: 20,
+    marginBottom: 14,
   },
   badge: {
     color: '#3b82f6',
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: 1.5,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   title: {
     fontSize: 28,

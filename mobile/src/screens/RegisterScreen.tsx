@@ -8,6 +8,7 @@ import {
   Platform,
   ScrollView,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeScreen } from '../components/ui/SafeScreen';
 import { Input } from '../components/ui/Input';
@@ -63,6 +64,11 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
       >
         <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
+            <Image
+              source={require('../../assets/logo.png')}
+              style={styles.brandLogo}
+              resizeMode="contain"
+            />
             <Text style={styles.badge}>CREATE ACCOUNT</Text>
             <Text style={styles.title}>Join MotoHub</Text>
             <Text style={styles.subtitle}>Register to browse vehicles, order spare parts, and book service appointments.</Text>
@@ -135,8 +141,14 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
     marginTop: 10,
+  },
+  brandLogo: {
+    width: 80,
+    height: 80,
+    borderRadius: 18,
+    marginBottom: 12,
   },
   badge: {
     color: '#10b981',

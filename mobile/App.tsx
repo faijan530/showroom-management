@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Text, Image } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './src/store/auth.store';
 import { LoginScreen } from './src/screens/LoginScreen';
@@ -51,8 +51,14 @@ function AppContent() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3b82f6" />
-        <Text style={styles.loadingText}>Initializing MotoHub...</Text>
+        <Image
+          source={require('./assets/logo.png')}
+          style={styles.splashLogo}
+          resizeMode="contain"
+        />
+        <Text style={styles.splashAppName}>MOTOHUB</Text>
+        <ActivityIndicator size="large" color="#3b82f6" style={styles.loader} />
+        <Text style={styles.loadingText}>Initializing Showroom Platform...</Text>
       </View>
     );
   }
@@ -174,14 +180,31 @@ export default function App() {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#090d16',
+    backgroundColor: '#070a12',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
+  },
+  splashLogo: {
+    width: 140,
+    height: 140,
+    borderRadius: 28,
+    marginBottom: 16,
+  },
+  splashAppName: {
+    color: '#f8fafc',
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: 2,
+    marginBottom: 8,
+  },
+  loader: {
+    marginVertical: 14,
   },
   loadingText: {
-    color: '#9ca3af',
-    marginTop: 12,
-    fontSize: 14,
+    color: '#94a3b8',
+    fontSize: 13,
     fontWeight: '600',
   },
 });
+
