@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
     const serviceJob = await prisma.serviceJob.create({
       data: {
         showroomId: targetShowroomId,
+        userId: user.id,
         customerName: data.customer_name,
         customerPhone: data.customer_phone,
         vehicleType: data.vehicle_type,
@@ -95,13 +96,20 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await authorizeRoles(req, ['ADMIN', 'INVENTORY_MANAGER', 'WORKER', 'SUPERADMIN']);
+    const user = await authorizeRoles(req, ['ADMIN', 'INVENTORY_MANAGER', 'WORKER', 'SUPERADMIN', 'USER']);
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status') as any;
 
     const whereClause: any = {};
 
-    if (user.role === 'WORKER') {
+    if (user.role === 'USER') {
+      const cleanPhone = user.phone ? user.phone.replace(/\D/g, '').slice(-10) : '';
+      whereClause.OR = [
+        { userId: user.id },
+        { customerPhone: user.phone },
+        ...(cleanPhone ? [{ customerPhone: cleanPhone }] : []),
+      ];
+    } else if (user.role === 'WORKER') {
       whereClause.assignedWorkerId = user.id;
     } else if (user.role !== 'SUPERADMIN' && user.showroomId) {
       whereClause.showroomId = user.showroomId;
