@@ -6,11 +6,12 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeScreen } from '../components/ui/SafeScreen';
 import { Button } from '../components/ui/Button';
 import { useAuthStore } from '../store/auth.store';
-import { getSpareParts } from '../lib/spare-parts-api';
+import { getSpareParts, updateSparePart } from '../lib/spare-parts-api';
 import { SparePart } from '../types/spare-part';
 
 interface InventoryManagerDashboardScreenProps {
@@ -50,6 +51,23 @@ export const InventoryManagerDashboardScreen: React.FC<InventoryManagerDashboard
   const inStockCount = parts.filter((p) => p.stock_quantity > p.min_stock_alert).length;
   const lowStockCount = parts.filter((p) => p.stock_quantity > 0 && p.stock_quantity <= p.min_stock_alert).length;
   const outOfStockCount = parts.filter((p) => p.stock_quantity === 0).length;
+
+  const handleQuickRestock = async (part: SparePart, addition: number) => {
+    const newQty = part.stock_quantity + addition;
+    try {
+      setParts((prev) =>
+        prev.map((p) => (p.id === part.id ? { ...p, stock_quantity: newQty } : p))
+      );
+      await updateSparePart(part.id, { stock_quantity: newQty });
+      Alert.alert('Restock Successful', `Added +${addition} items to ${part.part_name}. New stock: ${newQty}`);
+      fetchStockSummary();
+    } catch (err: any) {
+      Alert.alert('Restock Error', err.message || 'Could not update stock.');
+      fetchStockSummary();
+    }
+  };
+
+  const lowStockItems = parts.filter((p) => p.stock_quantity <= p.min_stock_alert);
 
   return (
     <SafeScreen>
@@ -126,19 +144,69 @@ export const InventoryManagerDashboardScreen: React.FC<InventoryManagerDashboard
           </View>
         )}
 
-        {/* Alert Overview Banner */}
+        {/* Low-Stock Actionable Batch Restock Panel */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Inventory Operations Summary</Text>
+          <View style={styles.restockHeaderRow}>
+            <Text style={styles.cardTitle}>⚡ Quick Batch Restock Panel</Text>
+            {lowStockItems.length > 0 ? (
+              <View style={styles.alertCountBadge}>
+                <Text style={styles.alertCountBadgeText}>{lowStockItems.length} NEEDS RESTOCK</Text>
+              </View>
+            ) : null}
+          </View>
           <Text style={styles.cardDesc}>
-            {totalParts} total OEM spare parts registered under {showroomTitle}.
+            One-tap batch restock for low or depleted OEM components in {showroomTitle}.
           </Text>
 
+          {lowStockItems.length === 0 ? (
+            <View style={styles.allHealthyBox}>
+              <Text style={styles.allHealthyText}>✅ All spare parts are well-stocked above minimum thresholds.</Text>
+            </View>
+          ) : (
+            lowStockItems.slice(0, 5).map((item) => (
+              <View key={item.id} style={styles.restockItemRow}>
+                <View style={styles.restockItemMeta}>
+                  <Text style={styles.restockItemName} numberOfLines={1}>
+                    {item.part_name}
+                  </Text>
+                  <Text style={styles.restockItemSub}>
+                    SKU: {item.part_code} • Qty: <Text style={styles.qtyHighlight}>{item.stock_quantity}</Text> (Min: {item.min_stock_alert})
+                  </Text>
+                </View>
+
+                <View style={styles.batchBtnGroup}>
+                  <TouchableOpacity
+                    style={styles.batchBtn}
+                    onPress={() => handleQuickRestock(item, 5)}
+                  >
+                    <Text style={styles.batchBtnText}>+5</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.batchBtn, styles.batchBtnPrimary]}
+                    onPress={() => handleQuickRestock(item, 10)}
+                  >
+                    <Text style={styles.batchBtnText}>+10</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.batchBtn, styles.batchBtnSuccess]}
+                    onPress={() => handleQuickRestock(item, 25)}
+                  >
+                    <Text style={styles.batchBtnText}>+25</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))
+          )}
+
           <Button
-            title="⚙️ Manage Spare Parts & Adjust Stock"
+            title="⚙️ Full Stock Catalog & Custom Restock"
             onPress={onNavigateToSpareParts || (() => {})}
             style={styles.manageBtn}
           />
         </View>
+
 
         <Button
           title="Sign Out"
@@ -322,9 +390,91 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   manageBtn: {
-    marginTop: 4,
+    marginTop: 12,
   },
   logoutBtn: {
     marginTop: 10,
   },
+  restockHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  alertCountBadge: {
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+  },
+  alertCountBadgeText: {
+    color: '#ef4444',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  allHealthyBox: {
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+  },
+  allHealthyText: {
+    color: '#10b981',
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  restockItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#1e293b',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  restockItemMeta: {
+    flex: 1,
+    marginRight: 10,
+  },
+  restockItemName: {
+    color: '#f8fafc',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  restockItemSub: {
+    color: '#94a3b8',
+    fontSize: 11,
+  },
+  qtyHighlight: {
+    color: '#ef4444',
+    fontWeight: '800',
+  },
+  batchBtnGroup: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  batchBtn: {
+    backgroundColor: '#06b6d4',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  batchBtnPrimary: {
+    backgroundColor: '#3b82f6',
+  },
+  batchBtnSuccess: {
+    backgroundColor: '#10b981',
+  },
+  batchBtnText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '800',
+  },
 });
+

@@ -16,7 +16,7 @@ import { SafeScreen } from '../components/ui/SafeScreen';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { SparePartCard } from '../components/spare-parts/SparePartCard';
-import { getSpareParts, createSparePart } from '../lib/spare-parts-api';
+import { getSpareParts, createSparePart, updateSparePart } from '../lib/spare-parts-api';
 import { SparePart, SparePartVehicleType } from '../types/spare-part';
 import { useAuthStore } from '../store/auth.store';
 
@@ -137,7 +137,21 @@ export const SparePartsScreen: React.FC<SparePartsScreenProps> = ({
     }
   };
 
+  const handleUpdateStock = async (part: SparePart, newQuantity: number) => {
+    try {
+      // Optimistic local UI update
+      setParts((prev) =>
+        prev.map((p) => (p.id === part.id ? { ...p, stock_quantity: newQuantity } : p))
+      );
+      await updateSparePart(part.id, { stock_quantity: newQuantity });
+    } catch (err: any) {
+      Alert.alert('Restock Failed', err.message || 'Could not update stock quantity.');
+      fetchPartsCatalog(); // rollback to server state on error
+    }
+  };
+
   return (
+
     <SafeScreen>
       {/* Header */}
       <View style={styles.header}>
@@ -255,7 +269,12 @@ export const SparePartsScreen: React.FC<SparePartsScreenProps> = ({
           data={parts}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <SparePartCard part={item} onPress={onSelectPart} />
+            <SparePartCard
+              part={item}
+              onPress={onSelectPart}
+              isManager={isManagerOrAdmin}
+              onUpdateStock={handleUpdateStock}
+            />
           )}
           contentContainerStyle={styles.listContainer}
           refreshControl={

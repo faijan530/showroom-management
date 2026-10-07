@@ -41,3 +41,12 @@ export async function createSparePart(
   const response = await apiClient.post('/spare-parts', input);
   return response.data.data.spare_part;
 }
+
+export async function updateSparePart(
+  id: string,
+  input: Partial<CreateSparePartInput>
+): Promise<SparePart> {
+  const response = await apiClient.put(`/spare-parts/${id}`, input);
+  return response.data.data.spare_part;
+}
+

@@ -5,9 +5,18 @@ import { SparePart } from '../../types/spare-part';
 interface SparePartCardProps {
   part: SparePart;
   onPress: (part: SparePart) => void;
+  onUpdateStock?: (part: SparePart, newQuantity: number) => Promise<void> | void;
+  isManager?: boolean;
 }
 
-export const SparePartCard: React.FC<SparePartCardProps> = ({ part, onPress }) => {
+export const SparePartCard: React.FC<SparePartCardProps> = ({
+  part,
+  onPress,
+  onUpdateStock,
+  isManager = false,
+}) => {
+  const [updating, setUpdating] = React.useState(false);
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -27,6 +36,17 @@ export const SparePartCard: React.FC<SparePartCardProps> = ({ part, onPress }) =
   };
 
   const stockBadge = getStockBadge();
+
+  const handleStockChange = async (delta: number) => {
+    if (!onUpdateStock || updating) return;
+    const targetQty = Math.max(0, part.stock_quantity + delta);
+    setUpdating(true);
+    try {
+      await onUpdateStock(part, targetQty);
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   return (
     <TouchableOpacity
@@ -66,6 +86,42 @@ export const SparePartCard: React.FC<SparePartCardProps> = ({ part, onPress }) =
         </View>
       </View>
 
+      {/* Stock Management Row for Inventory Managers */}
+      {isManager && onUpdateStock ? (
+        <View style={styles.stockControlRow}>
+          <Text style={styles.stockControlLabel}>QUICK RESTOCK:</Text>
+          <View style={styles.counterGroup}>
+            <TouchableOpacity
+              style={[styles.countBtn, part.stock_quantity === 0 ? styles.countBtnDisabled : null]}
+              disabled={part.stock_quantity === 0 || updating}
+              onPress={() => handleStockChange(-1)}
+            >
+              <Text style={styles.countBtnText}>-</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.currentStockText}>
+              {updating ? '...' : part.stock_quantity}
+            </Text>
+
+            <TouchableOpacity
+              style={styles.countBtn}
+              disabled={updating}
+              onPress={() => handleStockChange(1)}
+            >
+              <Text style={styles.countBtnText}>+</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={styles.quickBatchBtn}
+            disabled={updating}
+            onPress={() => handleStockChange(10)}
+          >
+            <Text style={styles.quickBatchBtnText}>+10 Batch</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+
       <View style={styles.cardFooter}>
         <View style={styles.showroomCol}>
           <Text style={styles.showroomLabel}>DEALERSHIP</Text>
@@ -84,6 +140,7 @@ export const SparePartCard: React.FC<SparePartCardProps> = ({ part, onPress }) =
     </TouchableOpacity>
   );
 };
+
 
 const styles = StyleSheet.create({
   card: {
@@ -212,4 +269,60 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
   },
+  stockControlRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#1e293b',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginVertical: 8,
+  },
+  stockControlLabel: {
+    color: '#38bdf8',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  counterGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  countBtn: {
+    backgroundColor: '#06b6d4',
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  countBtnDisabled: {
+    backgroundColor: '#334155',
+  },
+  countBtnText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  currentStockText: {
+    color: '#f8fafc',
+    fontSize: 14,
+    fontWeight: '800',
+    minWidth: 20,
+    textAlign: 'center',
+  },
+  quickBatchBtn: {
+    backgroundColor: '#10b981',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  quickBatchBtnText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '800',
+  },
 });
+
